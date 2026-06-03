@@ -2,6 +2,7 @@ import webview
 import json
 import os
 import subprocess
+import sys
 import time
 import threading
 from datetime import datetime
@@ -12,6 +13,29 @@ try:
     HAS_TRAY = True
 except ImportError:
     HAS_TRAY = False
+
+# ── Single-instance guard ──
+import ctypes
+_MUTEX_NAME = "Global\\ClaudeCodeLauncher_SingleInstance"
+_mutex = ctypes.windll.kernel32.CreateMutexW(None, False, _MUTEX_NAME)
+if ctypes.windll.kernel32.GetLastError() == 183:  # ERROR_ALREADY_EXISTS
+    # Bring existing window to foreground via EnumWindows
+    import ctypes.wintypes
+    HWND_found = ctypes.wintypes.HWND(0)
+    target = "Claude Code Launcher"
+    def _enum(hwnd, _):
+        buf = ctypes.create_unicode_buffer(256)
+        ctypes.windll.user32.GetWindowTextW(hwnd, buf, 256)
+        if target in buf.value:
+            ctypes.windll.user32.ShowWindow(hwnd, 9)   # SW_RESTORE
+            ctypes.windll.user32.SetForegroundWindow(hwnd)
+            return False
+        return True
+    ctypes.windll.user32.EnumWindows(
+        ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.wintypes.HWND, ctypes.wintypes.LPARAM)(_enum),
+        0,
+    )
+    sys.exit(0)
 
 WIN_BASE   = r"D:\Claude Code"
 WSL_BASE   = "/mnt/d/Claude Code"
