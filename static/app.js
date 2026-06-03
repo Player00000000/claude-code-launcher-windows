@@ -5,7 +5,6 @@ let allProjects  = [];
 let currentUsage = {};
 let sortBy       = 'name';
 let viewMode     = 'grid';
-let onTop        = false;
 
 /* ── HTML ESCAPE ── */
 function esc(s) {
@@ -187,20 +186,6 @@ function toggleArchivedView() {
 async function togglePin(name) {
   const r = await window.pywebview.api.toggle_pin(name);
   if (r.ok) loadProjects(true);
-}
-
-/* ── ALWAYS ON TOP (Feature 7) ── */
-async function toggleAlwaysOnTop() {
-  const r = await window.pywebview.api.toggle_always_on_top();
-  if (r.ok) {
-    onTop = r.on_top;
-    const btn = document.getElementById('ontop-btn');
-    btn.classList.toggle('active', onTop);
-    btn.title = onTop ? 'Disable always on top' : 'Always on top';
-    showToast(onTop ? 'ALWAYS ON TOP: ON' : 'ALWAYS ON TOP: OFF', 'success');
-  } else {
-    showToast('ERROR: ' + (r.error || 'Unknown'), 'error');
-  }
 }
 
 /* ── NOTES TOGGLE ── */

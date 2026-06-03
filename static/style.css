@@ -512,15 +512,6 @@ main {
 
 .card.card-pinned { border-top-width: 4px; }
 
-/* ── ALWAYS ON TOP (Feature 7) ── */
-.btn-ontop {
-  background: transparent; color: var(--text-dim);
-  border: 2px solid var(--border-bright); box-shadow: none;
-  padding: 5px 9px; font-size: 12px;
-}
-.btn-ontop:hover { color: var(--text); border-color: var(--text-dim); }
-.btn-ontop.active { color: #ffe66d; border-color: #ffe66d; box-shadow: 0 0 8px rgba(255,230,109,0.4); }
-
 /* ── DISK SIZE (Feature 8) ── */
 .disk-size {
   font-family: var(--font-pixel); font-size: 6px;

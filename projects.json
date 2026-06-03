@@ -7,7 +7,8 @@
       "Textual",
       "Claude CLI"
     ],
-    "last_launched": 1780477030.0331316
+    "last_launched": 1780478319.6611855,
+    "pinned": false
   },
   "Claude Tutor": {
     "description": "AI tutoring platform (Apprentice). 3 tracks, 4D skill model, Groq auto-grading, Supabase backend.",

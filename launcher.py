@@ -4,7 +4,6 @@ import os
 import subprocess
 import time
 import threading
-import ctypes
 from datetime import datetime
 
 try:
@@ -29,42 +28,7 @@ STATUS_COLORS = {
     "DONE":   "#4ecdc4",
 }
 
-_always_on_top = False
 _closing       = False
-
-
-def _get_hwnd():
-    """Get launcher top-level HWND."""
-    GA_ROOT = 2
-
-    def root(hwnd):
-        """Walk up to top-level ancestor."""
-        r = ctypes.windll.user32.GetAncestor(hwnd, GA_ROOT)
-        return r if r else hwnd
-
-    # Primary: pywebview WinForms Form.Handle
-    try:
-        hwnd = int(webview.windows[0]._window.Handle)
-        if hwnd:
-            return root(hwnd)
-    except Exception:
-        pass
-
-    # Fallback: EnumWindows by title
-    found = []
-    WNDENUMPROC = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_ulong, ctypes.c_ulong)
-
-    def cb(hwnd, _):
-        buf = ctypes.create_unicode_buffer(256)
-        ctypes.windll.user32.GetWindowTextW(hwnd, buf, 256)
-        if "Claude Code Launcher" in buf.value:
-            found.append(hwnd)
-            return False
-        return True
-
-    proc = WNDENUMPROC(cb)
-    ctypes.windll.user32.EnumWindows(proc, 0)
-    return root(found[0]) if found else 0
 
 
 def load_meta():
@@ -354,29 +318,6 @@ class Api:
         meta[name]["pinned"] = pinned
         save_meta(meta)
         return {"ok": True, "pinned": pinned}
-
-    def toggle_always_on_top(self):
-        global _always_on_top
-        _always_on_top = not _always_on_top
-        try:
-            hwnd = _get_hwnd()
-            if not hwnd:
-                _always_on_top = not _always_on_top
-                return {"ok": False, "error": "Window handle not found"}
-            result = ctypes.windll.user32.SetWindowPos(
-                hwnd,
-                -1 if _always_on_top else -2,  # HWND_TOPMOST / HWND_NOTOPMOST
-                0, 0, 0, 0,
-                0x0002 | 0x0001,               # SWP_NOMOVE | SWP_NOSIZE
-            )
-            if not result:
-                err = ctypes.windll.kernel32.GetLastError()
-                _always_on_top = not _always_on_top
-                return {"ok": False, "error": f"Win32 error {err}"}
-            return {"ok": True, "on_top": _always_on_top}
-        except Exception as e:
-            _always_on_top = not _always_on_top
-            return {"ok": False, "error": str(e)}
 
     def get_usage(self):
         usage = load_usage()
