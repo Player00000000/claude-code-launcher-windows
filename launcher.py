@@ -34,16 +34,23 @@ _closing       = False
 
 
 def _get_hwnd():
-    """Get launcher HWND — tries pywebview internals first, falls back to EnumWindows."""
-    # Primary: pywebview WinForms Form.Handle (most reliable)
+    """Get launcher top-level HWND."""
+    GA_ROOT = 2
+
+    def root(hwnd):
+        """Walk up to top-level ancestor."""
+        r = ctypes.windll.user32.GetAncestor(hwnd, GA_ROOT)
+        return r if r else hwnd
+
+    # Primary: pywebview WinForms Form.Handle
     try:
         hwnd = int(webview.windows[0]._window.Handle)
         if hwnd:
-            return hwnd
+            return root(hwnd)
     except Exception:
         pass
 
-    # Fallback: enumerate top-level windows by title
+    # Fallback: EnumWindows by title
     found = []
     WNDENUMPROC = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_ulong, ctypes.c_ulong)
 
@@ -55,9 +62,9 @@ def _get_hwnd():
             return False
         return True
 
-    proc = WNDENUMPROC(cb)  # keep reference alive during enumeration
+    proc = WNDENUMPROC(cb)
     ctypes.windll.user32.EnumWindows(proc, 0)
-    return found[0] if found else 0
+    return root(found[0]) if found else 0
 
 
 def load_meta():
