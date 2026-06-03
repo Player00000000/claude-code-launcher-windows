@@ -6,7 +6,8 @@
       "Python",
       "Textual",
       "Claude CLI"
-    ]
+    ],
+    "last_launched": 1780477030.0331316
   },
   "Claude Tutor": {
     "description": "AI tutoring platform (Apprentice). 3 tracks, 4D skill model, Groq auto-grading, Supabase backend.",
@@ -17,7 +18,7 @@
       "Supabase",
       "Clerk"
     ],
-    "last_launched": 1780476487.3731515
+    "last_launched": 1780477089.4664457
   },
   "The Flash": {
     "description": "Daily work notes → professional flash reports. Voice-to-text + Groq AI polish.",
@@ -26,7 +27,8 @@
       "Flask",
       "Groq",
       "Web Speech API"
-    ]
+    ],
+    "last_launched": 1780477100.868955
   },
   "Travel agent": {
     "description": "USA national parks road trip guide for Thai travelers. 6 routes, interactive Folium maps, THB pricing.",

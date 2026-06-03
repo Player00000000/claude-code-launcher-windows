@@ -24,10 +24,20 @@
              autocomplete="off" spellcheck="false">
       <div class="header-meta">
         <div id="credit-widget" class="credit-widget"></div>
+        <select class="sort-select" id="sort-select" onchange="setSortBy(this.value)" title="Sort projects">
+          <option value="name">↑ NAME</option>
+          <option value="launched">▶ LAUNCHED</option>
+          <option value="modified">⏱ MODIFIED</option>
+          <option value="status">◈ STATUS</option>
+        </select>
         <span class="project-count" id="project-count">— PROJECTS</span>
+        <button class="btn-pixel btn-view-toggle" id="view-toggle"
+                onclick="toggleView()" title="Switch to list view">☰</button>
         <button class="btn-pixel btn-archive-toggle" id="archive-toggle"
                 onclick="toggleArchivedView()" title="Show archived projects">⊘</button>
-        <button class="btn-pixel btn-help" onclick="openHelp()" title="Help">?</button>
+        <button class="btn-pixel btn-ontop" id="ontop-btn"
+                onclick="toggleAlwaysOnTop()" title="Always on top">📌</button>
+        <button class="btn-pixel btn-help" onclick="openHelp()" title="Help  (press ?)">?</button>
         <button class="btn-pixel btn-add" onclick="openAddModal()">+ NEW</button>
       </div>
     </div>

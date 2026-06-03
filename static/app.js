@@ -3,6 +3,9 @@ let lastProjectsJson = '';
 let showArchived = false;
 let allProjects  = [];
 let currentUsage = {};
+let sortBy       = 'name';
+let viewMode     = 'grid';
+let onTop        = false;
 
 /* ── HTML ESCAPE ── */
 function esc(s) {
@@ -10,6 +13,26 @@ function esc(s) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;')
     .replace(/\n/g, '&#10;').replace(/\r/g, '');
+}
+
+/* ── SORT (Feature 2) ── */
+function setSortBy(val) {
+  sortBy = val;
+  applyFilter(document.getElementById('search-bar').value);
+}
+
+function sortProjects(projects) {
+  const pinned   = projects.filter(p => p.pinned);
+  const unpinned = projects.filter(p => !p.pinned);
+  unpinned.sort((a, b) => {
+    switch (sortBy) {
+      case 'launched': return (b.last_launched_ts || 0) - (a.last_launched_ts || 0);
+      case 'modified': return (b.last_modified_ts || 0) - (a.last_modified_ts || 0);
+      case 'status':   return a.status.localeCompare(b.status);
+      default:         return a.name.localeCompare(b.name);
+    }
+  });
+  return [...pinned, ...unpinned];
 }
 
 /* ── RENDER ── */
@@ -32,6 +55,7 @@ function applyFilter(query) {
     );
   }
 
+  visible = sortProjects(visible);
   count.textContent = visible.length + ' PROJECTS';
 
   if (!visible.length) {
@@ -45,29 +69,26 @@ function applyFilter(query) {
     const kbdHint = (i < 9)
       ? `<span class="kbd-hint" title="Press ${i+1} to launch">${i+1}</span>` : '';
 
-    // Git badge
+    const pinBtn = `<button class="btn-pin${p.pinned ? ' pinned' : ''}"
+      onclick="togglePin('${esc(p.name)}')" title="${p.pinned ? 'Unpin' : 'Pin to top'}">
+      ${p.pinned ? '★' : '☆'}</button>`;
+
     let gitBadge = '';
     if (p.git) {
-      const dot = p.git.dirty > 0
-        ? `<span class="git-dirty">•${p.git.dirty}</span>` : '';
+      const dot = p.git.dirty > 0 ? `<span class="git-dirty">•${p.git.dirty}</span>` : '';
       gitBadge = `<span class="git-badge" title="${p.git.dirty} uncommitted file(s)">⑂ ${esc(p.git.branch)}${dot}</span>`;
     }
 
-    // Last launched row
     const launchedHtml = p.last_launched
       ? `<div class="card-launched">▶ launched ${esc(p.last_launched)}</div>` : '';
 
-    // Notes
     const notesHtml = p.notes
       ? `<div class="card-notes collapsed">${esc(p.notes)}</div>
          <button class="btn-notes-toggle" onclick="toggleNotes(this)">▼ NOTES</button>` : '';
 
-    // Archive overlay
     const archiveClass = p.archived ? ' card-archived' : '';
-    const archiveBadge = p.archived
-      ? '<div class="archive-badge">ARCHIVED</div>' : '';
+    const archiveBadge = p.archived ? '<div class="archive-badge">ARCHIVED</div>' : '';
 
-    // Browser quick action (only if port set)
     const portBtn = p.port
       ? `<button class="btn-quick" onclick="openBrowser('${esc(p.name)}','${esc(p.port)}')" title="Open localhost:${esc(p.port)}">🌐</button>` : '';
 
@@ -84,12 +105,14 @@ function applyFilter(query) {
       <div class="card-header">
         <div class="card-dot" style="background:${p.color}"></div>
         <span class="card-name">${esc(p.name)}</span>
+        ${pinBtn}
         <button class="btn-edit" onclick="openEditModal('${esc(p.name)}',event)" title="Edit">✎</button>
       </div>
       <div class="card-meta">
         <span class="status-badge" style="--status-color:${p.status_color}">${esc(p.status)}</span>
         ${gitBadge}
         <span class="last-modified">⏱ ${esc(p.last_modified)}</span>
+        <span class="disk-size">💾 ${esc(p.disk_size)}</span>
       </div>
       ${launchedHtml}
       <div class="card-desc">${esc(p.description)}</div>
@@ -116,8 +139,7 @@ function applyFilter(query) {
 async function loadProjects(force = false) {
   const modalsOpen =
     !document.getElementById('add-modal').classList.contains('hidden') ||
-    !document.getElementById('edit-modal').classList.contains('hidden') ||
-    !document.getElementById('help-modal').classList.contains('hidden');
+    !document.getElementById('edit-modal').classList.contains('hidden');
   if (modalsOpen && !force) return;
 
   try {
@@ -136,29 +158,52 @@ async function loadProjects(force = false) {
 window.addEventListener('pywebviewready', () => {
   loadProjects(true);
   loadUsage();
-  setInterval(() => loadProjects(), 5000);   // Feature 1: auto-refresh
+  setInterval(() => loadProjects(), 5000);
 });
 
-/* ── SEARCH (Feature 4) ── */
-function filterProjects(query) {
-  applyFilter(query);
+/* ── SEARCH ── */
+function filterProjects(query) { applyFilter(query); }
+
+/* ── VIEW TOGGLE (Feature 3) ── */
+function toggleView() {
+  viewMode = viewMode === 'grid' ? 'list' : 'grid';
+  const grid = document.getElementById('project-grid');
+  grid.classList.toggle('list-view', viewMode === 'list');
+  const btn = document.getElementById('view-toggle');
+  btn.textContent = viewMode === 'list' ? '⊞' : '☰';
+  btn.title = viewMode === 'list' ? 'Switch to grid view' : 'Switch to list view';
 }
 
-/* ── HELP ── */
-function openHelp() {
-  document.getElementById('help-modal').classList.remove('hidden');
-}
-
-/* ── ARCHIVE TOGGLE (Feature 9) ── */
+/* ── ARCHIVE TOGGLE ── */
 function toggleArchivedView() {
   showArchived = !showArchived;
   const btn = document.getElementById('archive-toggle');
   btn.classList.toggle('active', showArchived);
-  btn.title = showArchived ? 'Hide archived projects' : 'Show archived projects';
+  btn.title = showArchived ? 'Hide archived' : 'Show archived';
   loadProjects(true);
 }
 
-/* ── NOTES TOGGLE (Feature 8) ── */
+/* ── PIN (Feature 1) ── */
+async function togglePin(name) {
+  const r = await window.pywebview.api.toggle_pin(name);
+  if (r.ok) loadProjects(true);
+}
+
+/* ── ALWAYS ON TOP (Feature 7) ── */
+async function toggleAlwaysOnTop() {
+  const r = await window.pywebview.api.toggle_always_on_top();
+  if (r.ok) {
+    onTop = r.on_top;
+    const btn = document.getElementById('ontop-btn');
+    btn.classList.toggle('active', onTop);
+    btn.title = onTop ? 'Disable always on top' : 'Always on top';
+    showToast(onTop ? 'ALWAYS ON TOP: ON' : 'ALWAYS ON TOP: OFF', 'success');
+  } else {
+    showToast('ERROR: ' + (r.error || 'Unknown'), 'error');
+  }
+}
+
+/* ── NOTES TOGGLE ── */
 function toggleNotes(btn) {
   const notes = btn.previousElementSibling;
   if (!notes) return;
@@ -166,17 +211,15 @@ function toggleNotes(btn) {
   btn.textContent = collapsed ? '▼ NOTES' : '▲ NOTES';
 }
 
-/* ── QUICK ACTIONS (Feature 6) ── */
+/* ── QUICK ACTIONS ── */
 async function openExplorer(name) {
   const r = await window.pywebview.api.open_explorer(name);
   if (!r.ok) showToast('ERROR: ' + r.error, 'error');
 }
-
 async function openVSCode(name) {
   const r = await window.pywebview.api.open_vscode(name);
   if (!r.ok) showToast('ERROR: ' + r.error, 'error');
 }
-
 async function openBrowser(name, port) {
   if (!port) { showToast('SET PORT IN EDIT FIRST', 'error'); return; }
   const r = await window.pywebview.api.open_browser(name, port);
@@ -193,7 +236,7 @@ function showToast(msg, type = '') {
   toastTimer = setTimeout(() => { t.className = 'toast hidden'; }, 3000);
 }
 
-/* ── LAUNCH (Feature 3 + Feature 7) ── */
+/* ── LAUNCH ── */
 async function launchProject(name, wslPath, btn) {
   if (btn.classList.contains('loading')) return;
   btn.classList.add('loading');
@@ -222,6 +265,7 @@ async function launchProject(name, wslPath, btn) {
 function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 function closeOnBackdrop(e, id) { if (e.target.id === id) closeModal(id); }
 function setSwatch(color, inputId) { document.getElementById(inputId).value = color; }
+function openHelp() { document.getElementById('help-modal').classList.remove('hidden'); }
 
 /* ── ADD ── */
 function openAddModal() {
@@ -237,8 +281,7 @@ function openAddModal() {
 async function addProject() {
   const name   = document.getElementById('add-name').value.trim();
   const desc   = document.getElementById('add-desc').value.trim() || 'New project.';
-  const tech   = document.getElementById('add-tech').value.trim()
-                   .split(',').map(t => t.trim()).filter(Boolean);
+  const tech   = document.getElementById('add-tech').value.trim().split(',').map(t=>t.trim()).filter(Boolean);
   const color  = document.getElementById('add-color').value;
   const status = document.getElementById('add-status').value;
   if (!name) { showToast('NAME REQUIRED', 'error'); return; }
@@ -252,17 +295,13 @@ async function addProject() {
   }
 }
 
-/* ── EDIT (Features 7, 8, 9) ── */
+/* ── EDIT ── */
 async function openEditModal(name, event) {
   event.stopPropagation();
   const card = document.querySelector(`.card[data-name="${CSS.escape(name)}"]`);
   const archived = card.classList.contains('card-archived');
-
-  // Fetch fresh meta from Python (avoids encoding issues with notes/launch_cmd)
   let meta = {};
-  try {
-    meta = await window.pywebview.api.get_project_meta(name);
-  } catch (e) {}
+  try { meta = await window.pywebview.api.get_project_meta(name); } catch(e) {}
 
   document.getElementById('edit-name').value       = name;
   document.getElementById('edit-desc').value       = meta.description || '';
@@ -276,14 +315,11 @@ async function openEditModal(name, event) {
   const archBtn = document.getElementById('edit-archive-btn');
   if (archived) {
     archBtn.textContent = '✓ UNARCHIVE';
-    archBtn.classList.add('btn-unarchive');
-    archBtn.classList.remove('btn-archive');
+    archBtn.classList.add('btn-unarchive'); archBtn.classList.remove('btn-archive');
   } else {
     archBtn.textContent = '⊘ ARCHIVE';
-    archBtn.classList.add('btn-archive');
-    archBtn.classList.remove('btn-unarchive');
+    archBtn.classList.add('btn-archive'); archBtn.classList.remove('btn-unarchive');
   }
-
   document.getElementById('edit-modal').classList.remove('hidden');
   setTimeout(() => document.getElementById('edit-desc').focus(), 50);
 }
@@ -292,16 +328,13 @@ async function saveEdit() {
   const name      = document.getElementById('edit-name').value;
   const desc      = document.getElementById('edit-desc').value.trim();
   const notes     = document.getElementById('edit-notes').value.trim();
-  const tech      = document.getElementById('edit-tech').value.trim()
-                     .split(',').map(t => t.trim()).filter(Boolean);
+  const tech      = document.getElementById('edit-tech').value.trim().split(',').map(t=>t.trim()).filter(Boolean);
   const color     = document.getElementById('edit-color').value;
   const status    = document.getElementById('edit-status').value;
   const launchCmd = document.getElementById('edit-launch-cmd').value.trim();
   const port      = document.getElementById('edit-port').value.trim();
 
-  const data = await window.pywebview.api.update_project(
-    name, desc, color, tech, status, launchCmd, notes, port
-  );
+  const data = await window.pywebview.api.update_project(name, desc, color, tech, status, launchCmd, notes, port);
   if (data.ok) {
     closeModal('edit-modal');
     showToast('SAVED', 'success');
@@ -323,29 +356,21 @@ async function archiveFromEdit() {
   }
 }
 
-/* ── CREDIT WIDGET (Feature 10) ── */
+/* ── CREDIT WIDGET ── */
 async function loadUsage() {
-  try {
-    currentUsage = await window.pywebview.api.get_usage();
-    renderCredit(currentUsage);
-  } catch (e) {}
+  try { currentUsage = await window.pywebview.api.get_usage(); renderCredit(currentUsage); } catch(e) {}
 }
 
 function renderCredit(u) {
   const el = document.getElementById('credit-widget');
   if (!el) return;
   const launches = u.launches_this_month || 0;
-  let resetHtml = '';
-  if (u.reset_in_days !== null && u.reset_in_days !== undefined) {
-    resetHtml = `<span class="credit-pill credit-reset" onclick="openBillingModal()" title="Billing resets in ${u.reset_in_days} days — click to change">⚡ ${u.reset_in_days}D</span>`;
-  } else {
-    resetHtml = `<span class="credit-pill credit-set" onclick="openBillingModal()" title="Set billing reset date">⚡ SET DATE</span>`;
-  }
-  el.innerHTML = `
-    ${resetHtml}
+  const resetHtml = (u.reset_in_days !== null && u.reset_in_days !== undefined)
+    ? `<span class="credit-pill credit-reset" onclick="openBillingModal()" title="Resets in ${u.reset_in_days}d">⚡ ${u.reset_in_days}D</span>`
+    : `<span class="credit-pill credit-set" onclick="openBillingModal()" title="Set billing date">⚡ SET</span>`;
+  el.innerHTML = `${resetHtml}
     <span class="credit-pill credit-launches" title="Launches this month">▶ ${launches}</span>
-    <span class="credit-pill credit-console" onclick="openConsole()" title="Open Anthropic Console">CONSOLE ↗</span>
-  `;
+    <span class="credit-pill credit-console" onclick="openConsole()" title="Anthropic Console">CONSOLE ↗</span>`;
 }
 
 function openBillingModal() {
@@ -355,7 +380,7 @@ function openBillingModal() {
 }
 
 async function openConsole() {
-  try { await window.pywebview.api.open_console(); } catch (e) {}
+  try { await window.pywebview.api.open_console(); } catch(e) {}
 }
 
 async function saveBillingDay() {
@@ -371,48 +396,35 @@ async function saveBillingDay() {
   }
 }
 
-/* ── KEYBOARD SHORTCUTS (Feature 5) ── */
+/* ── KEYBOARD ── */
 document.addEventListener('keydown', e => {
-  const active = document.activeElement;
+  const active  = document.activeElement;
   const inInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes(active.tagName);
   const modalOpen =
     !document.getElementById('add-modal').classList.contains('hidden') ||
     !document.getElementById('edit-modal').classList.contains('hidden') ||
-    !document.getElementById('billing-modal').classList.contains('hidden');
+    !document.getElementById('billing-modal').classList.contains('hidden') ||
+    !document.getElementById('help-modal').classList.contains('hidden');
 
   if (e.key === 'Escape') {
     if (inInput && active.id === 'search-bar') {
-      active.value = '';
-      filterProjects('');
-      active.blur();
+      active.value = ''; filterProjects(''); active.blur();
     }
-    closeModal('add-modal');
-    closeModal('edit-modal');
-    closeModal('billing-modal');
-    closeModal('help-modal');
+    closeModal('add-modal'); closeModal('edit-modal');
+    closeModal('billing-modal'); closeModal('help-modal');
     return;
   }
-
-  // ? to open help
-  if (!modalOpen && !inInput && e.key === '?') {
-    openHelp();
-    return;
-  }
-
-  // Press / to focus search
   if (!modalOpen && !inInput && e.key === '/') {
     e.preventDefault();
     document.getElementById('search-bar').focus();
     return;
   }
-
-  // 1–9: launch nth visible card
+  if (!modalOpen && !inInput && e.key === '?') {
+    openHelp(); return;
+  }
   if (!modalOpen && !inInput && e.key >= '1' && e.key <= '9') {
     const idx = parseInt(e.key) - 1;
     const cards = document.querySelectorAll('.card:not(.card-archived)');
-    if (cards[idx]) {
-      const btn = cards[idx].querySelector('.btn-launch');
-      if (btn) btn.click();
-    }
+    if (cards[idx]) cards[idx].querySelector('.btn-launch')?.click();
   }
 });

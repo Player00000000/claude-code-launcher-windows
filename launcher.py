@@ -3,7 +3,16 @@ import json
 import os
 import subprocess
 import time
+import threading
+import ctypes
 from datetime import datetime
+
+try:
+    import pystray
+    from PIL import Image as PILImage
+    HAS_TRAY = True
+except ImportError:
+    HAS_TRAY = False
 
 WIN_BASE   = r"D:\Claude Code"
 WSL_BASE   = "/mnt/d/Claude Code"
@@ -19,6 +28,9 @@ STATUS_COLORS = {
     "PAUSED": "#888899",
     "DONE":   "#4ecdc4",
 }
+
+_always_on_top = False
+_closing       = False
 
 
 def load_meta():
@@ -45,21 +57,24 @@ def save_usage(data):
         json.dump(data, f, indent=2)
 
 
-def get_last_modified(win_path):
+def scan_folder(win_path):
+    """Single os.walk pass — returns (latest_mtime, total_size_bytes)."""
     latest = 0
+    total  = 0
     try:
         for root, dirs, files in os.walk(win_path):
             dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
             for f in files:
                 try:
-                    mt = os.path.getmtime(os.path.join(root, f))
-                    if mt > latest:
-                        latest = mt
+                    st = os.stat(os.path.join(root, f))
+                    if st.st_mtime > latest:
+                        latest = st.st_mtime
+                    total += st.st_size
                 except OSError:
                     pass
     except OSError:
         pass
-    return latest
+    return latest, total
 
 
 def fmt_ago(ts):
@@ -79,9 +94,46 @@ def fmt_ago(ts):
     return datetime.fromtimestamp(ts).strftime("%b %Y")
 
 
+def fmt_size(b):
+    if b < 1024:
+        return f"{b}B"
+    if b < 1024 ** 2:
+        return f"{b/1024:.0f}KB"
+    if b < 1024 ** 3:
+        return f"{b/1024**2:.1f}MB"
+    return f"{b/1024**3:.1f}GB"
+
+
+def get_readme_description(win_path):
+    """Return first meaningful text line from README, or None."""
+    for name in ("README.md", "readme.md", "README.MD", "README.txt", "readme.txt"):
+        path = os.path.join(win_path, name)
+        if not os.path.exists(path):
+            continue
+        try:
+            with open(path, "r", encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    # Skip headings, badges, HTML, horizontal rules, list markers
+                    if line[0] in ('#', '!', '[', '<', '>', '-', '*', '=', '|', '+'):
+                        continue
+                    if line.startswith("http"):
+                        continue
+                    # Strip markdown bold/italic/code
+                    for ch in ('**', '*', '__', '_', '`'):
+                        line = line.replace(ch, '')
+                    line = line.strip()
+                    if len(line) > 15:
+                        return line[:160]
+        except Exception:
+            pass
+    return None
+
+
 def get_git_status(win_path):
-    git_dir = os.path.join(win_path, ".git")
-    if not os.path.isdir(git_dir):
+    if not os.path.isdir(os.path.join(win_path, ".git")):
         return None
     try:
         result = subprocess.run(
@@ -107,6 +159,9 @@ def get_git_status(win_path):
         return None
 
 
+DEFAULT_DESC = "Click ✎ to edit description."
+
+
 def scan_projects(show_archived=False):
     meta = load_meta()
     projects = []
@@ -120,24 +175,36 @@ def scan_projects(show_archived=False):
             info = meta.get(folder, {})
             if info.get("archived", False) and not show_archived:
                 continue
-            status = info.get("status", "ACTIVE")
-            mtime  = get_last_modified(win_path)
-            git    = get_git_status(win_path)
+
+            status     = info.get("status", "ACTIVE")
+            mtime, sz  = scan_folder(win_path)
+            git        = get_git_status(win_path)
+            last_launch= info.get("last_launched", 0)
+
+            # Description: manual > README fallback > default
+            desc = info.get("description", "")
+            if not desc or desc == DEFAULT_DESC:
+                desc = get_readme_description(win_path) or DEFAULT_DESC
+
             projects.append({
-                "name":          folder,
-                "wsl_path":      f"{WSL_BASE}/{folder}",
-                "description":   info.get("description", "Click ✎ to edit description."),
-                "color":         info.get("color", "#888899"),
-                "tech":          info.get("tech", []),
-                "status":        status,
-                "status_color":  STATUS_COLORS.get(status, "#888899"),
-                "last_modified": fmt_ago(mtime),
-                "last_launched": fmt_ago(info.get("last_launched")),
-                "launch_cmd":    info.get("launch_cmd", ""),
-                "notes":         info.get("notes", ""),
-                "archived":      info.get("archived", False),
-                "port":          info.get("port", ""),
-                "git":           git,
+                "name":             folder,
+                "wsl_path":         f"{WSL_BASE}/{folder}",
+                "description":      desc,
+                "color":            info.get("color", "#888899"),
+                "tech":             info.get("tech", []),
+                "status":           status,
+                "status_color":     STATUS_COLORS.get(status, "#888899"),
+                "last_modified":    fmt_ago(mtime),
+                "last_modified_ts": mtime,
+                "last_launched":    fmt_ago(last_launch),
+                "last_launched_ts": last_launch,
+                "launch_cmd":       info.get("launch_cmd", ""),
+                "notes":            info.get("notes", ""),
+                "archived":         info.get("archived", False),
+                "port":             info.get("port", ""),
+                "git":              git,
+                "disk_size":        fmt_size(sz),
+                "pinned":           info.get("pinned", False),
             })
     except Exception as e:
         print(f"Scan error: {e}")
@@ -149,8 +216,7 @@ class Api:
         return scan_projects(show_archived)
 
     def get_project_meta(self, name):
-        meta = load_meta()
-        return meta.get(name, {})
+        return load_meta().get(name, {})
 
     def launch_project(self, name, wsl_path, launch_cmd=""):
         try:
@@ -161,10 +227,8 @@ class Api:
             save_meta(meta)
 
             usage = load_usage()
-            month_key = datetime.now().strftime("%Y-%m")
-            launches = usage.get("launches", {})
-            launches[month_key] = launches.get(month_key, 0) + 1
-            usage["launches"] = launches
+            mk = datetime.now().strftime("%Y-%m")
+            usage.setdefault("launches", {})[mk] = usage.get("launches", {}).get(mk, 0) + 1
             save_usage(usage)
 
             cmd = launch_cmd or meta.get(name, {}).get("launch_cmd", "")
@@ -173,8 +237,7 @@ class Api:
 
             subprocess.Popen(
                 ["wt.exe", "wsl.exe", "-e", "bash", "-ic", cmd],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
             )
             return {"ok": True}
         except Exception as e:
@@ -182,16 +245,14 @@ class Api:
 
     def open_explorer(self, name):
         try:
-            win_path = os.path.join(WIN_BASE, name)
-            subprocess.Popen(["explorer.exe", win_path])
+            subprocess.Popen(["explorer.exe", os.path.join(WIN_BASE, name)])
             return {"ok": True}
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
     def open_vscode(self, name):
         try:
-            win_path = os.path.join(WIN_BASE, name)
-            subprocess.Popen(f'code "{win_path}"', shell=True)
+            subprocess.Popen(f'code "{os.path.join(WIN_BASE, name)}"', shell=True)
             return {"ok": True}
         except Exception as e:
             return {"ok": False, "error": str(e)}
@@ -200,8 +261,7 @@ class Api:
         try:
             if not port:
                 return {"ok": False, "error": "No port set"}
-            url = f"http://localhost:{port}"
-            subprocess.Popen(["cmd.exe", "/c", "start", "", url])
+            subprocess.Popen(["cmd.exe", "/c", "start", "", f"http://localhost:{port}"])
             return {"ok": True}
         except Exception as e:
             return {"ok": False, "error": str(e)}
@@ -218,13 +278,15 @@ class Api:
         meta = load_meta()
         if name not in meta:
             meta[name] = {}
-        meta[name]["description"] = description
-        meta[name]["color"]       = color
-        meta[name]["tech"]        = tech if isinstance(tech, list) else []
-        meta[name]["status"]      = status if status in STATUS_COLORS else "ACTIVE"
-        meta[name]["launch_cmd"]  = launch_cmd
-        meta[name]["notes"]       = notes
-        meta[name]["port"]        = str(port) if port else ""
+        meta[name].update({
+            "description": description,
+            "color":       color,
+            "tech":        tech if isinstance(tech, list) else [],
+            "status":      status if status in STATUS_COLORS else "ACTIVE",
+            "launch_cmd":  launch_cmd,
+            "notes":       notes,
+            "port":        str(port) if port else "",
+        })
         save_meta(meta)
         return {"ok": True}
 
@@ -232,11 +294,10 @@ class Api:
         name = name.strip()
         if not name:
             return {"ok": False, "error": "Name required"}
-        win_path = os.path.join(WIN_BASE, name)
-        os.makedirs(win_path, exist_ok=True)
+        os.makedirs(os.path.join(WIN_BASE, name), exist_ok=True)
         meta = load_meta()
         meta[name] = {
-            "description": description or "New project.",
+            "description": description or DEFAULT_DESC,
             "color":       color or "#888899",
             "tech":        tech if isinstance(tech, list) else [],
             "status":      status if status in STATUS_COLORS else "ACTIVE",
@@ -246,37 +307,61 @@ class Api:
 
     def toggle_archive(self, name):
         meta = load_meta()
-        if name not in meta:
-            meta[name] = {}
+        meta.setdefault(name, {})
         archived = not meta[name].get("archived", False)
         meta[name]["archived"] = archived
         save_meta(meta)
         return {"ok": True, "archived": archived}
 
+    def toggle_pin(self, name):
+        meta = load_meta()
+        meta.setdefault(name, {})
+        pinned = not meta[name].get("pinned", False)
+        meta[name]["pinned"] = pinned
+        save_meta(meta)
+        return {"ok": True, "pinned": pinned}
+
+    def toggle_always_on_top(self):
+        global _always_on_top
+        _always_on_top = not _always_on_top
+        try:
+            HWND_TOPMOST    = -1
+            HWND_NOTOPMOST  = -2
+            SWP_NOMOVE      = 0x0002
+            SWP_NOSIZE      = 0x0001
+            hwnd = ctypes.windll.user32.FindWindowW(None, "Claude Code Launcher")
+            ctypes.windll.user32.SetWindowPos(
+                hwnd,
+                HWND_TOPMOST if _always_on_top else HWND_NOTOPMOST,
+                0, 0, 0, 0,
+                SWP_NOMOVE | SWP_NOSIZE,
+            )
+            return {"ok": True, "on_top": _always_on_top}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
     def get_usage(self):
         usage = load_usage()
         billing_day = usage.get("billing_start_day")
-        month_key = datetime.now().strftime("%Y-%m")
-        launches_this_month = usage.get("launches", {}).get(month_key, 0)
+        mk = datetime.now().strftime("%Y-%m")
+        launches_this_month = usage.get("launches", {}).get(mk, 0)
         reset_in = None
         if billing_day:
             try:
                 billing_day = int(billing_day)
                 today = datetime.now()
-                if today.day < billing_day:
-                    next_reset = today.replace(day=billing_day)
-                else:
-                    if today.month == 12:
-                        next_reset = today.replace(year=today.year + 1, month=1, day=billing_day)
-                    else:
-                        next_reset = today.replace(month=today.month + 1, day=billing_day)
+                next_reset = today.replace(day=billing_day) if today.day < billing_day else (
+                    today.replace(year=today.year + 1, month=1, day=billing_day)
+                    if today.month == 12
+                    else today.replace(month=today.month + 1, day=billing_day)
+                )
                 reset_in = (next_reset.date() - today.date()).days
             except Exception:
                 reset_in = None
         return {
-            "billing_start_day": billing_day,
+            "billing_start_day":  billing_day,
             "launches_this_month": launches_this_month,
-            "reset_in_days": reset_in,
+            "reset_in_days":      reset_in,
         }
 
     def set_billing_day(self, day):
@@ -298,9 +383,47 @@ if __name__ == "__main__":
         "Claude Code Launcher",
         f"file:///{index}",
         js_api=Api(),
-        width=1280,
-        height=740,
+        width=1280, height=740,
         min_size=(800, 500),
         resizable=True,
     )
+
+    # ── System tray (Feature 4) ──
+    tray_icon = None
+    if HAS_TRAY:
+        def on_closing():
+            global _closing
+            if _closing:
+                return
+            window.hide()
+            return False
+
+        def show_window(icon=None, item=None):
+            window.show()
+
+        def exit_app(icon=None, item=None):
+            global _closing
+            _closing = True
+            if tray_icon:
+                tray_icon.stop()
+            window.destroy()
+
+        icon_path = os.path.join(SCRIPT_DIR, "icon.ico")
+        if os.path.exists(icon_path):
+            tray_img = PILImage.open(icon_path).resize((64, 64)).convert("RGBA")
+        else:
+            tray_img = PILImage.new("RGBA", (64, 64), (30, 30, 80, 255))
+
+        tray_icon = pystray.Icon(
+            "claude_launcher",
+            tray_img,
+            "Claude Code Launcher",
+            menu=pystray.Menu(
+                pystray.MenuItem("Show", show_window, default=True),
+                pystray.MenuItem("Exit", exit_app),
+            ),
+        )
+        window.events.closing += on_closing
+        threading.Thread(target=tray_icon.run, daemon=True).start()
+
     webview.start()
