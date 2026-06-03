@@ -116,7 +116,8 @@ function applyFilter(query) {
 async function loadProjects(force = false) {
   const modalsOpen =
     !document.getElementById('add-modal').classList.contains('hidden') ||
-    !document.getElementById('edit-modal').classList.contains('hidden');
+    !document.getElementById('edit-modal').classList.contains('hidden') ||
+    !document.getElementById('help-modal').classList.contains('hidden');
   if (modalsOpen && !force) return;
 
   try {
@@ -141,6 +142,11 @@ window.addEventListener('pywebviewready', () => {
 /* ── SEARCH (Feature 4) ── */
 function filterProjects(query) {
   applyFilter(query);
+}
+
+/* ── HELP ── */
+function openHelp() {
+  document.getElementById('help-modal').classList.remove('hidden');
 }
 
 /* ── ARCHIVE TOGGLE (Feature 9) ── */
@@ -383,6 +389,13 @@ document.addEventListener('keydown', e => {
     closeModal('add-modal');
     closeModal('edit-modal');
     closeModal('billing-modal');
+    closeModal('help-modal');
+    return;
+  }
+
+  // ? to open help
+  if (!modalOpen && !inInput && e.key === '?') {
+    openHelp();
     return;
   }
 

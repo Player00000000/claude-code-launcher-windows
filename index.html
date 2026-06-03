@@ -27,6 +27,7 @@
         <span class="project-count" id="project-count">— PROJECTS</span>
         <button class="btn-pixel btn-archive-toggle" id="archive-toggle"
                 onclick="toggleArchivedView()" title="Show archived projects">⊘</button>
+        <button class="btn-pixel btn-help" onclick="openHelp()" title="Help">?</button>
         <button class="btn-pixel btn-add" onclick="openAddModal()">+ NEW</button>
       </div>
     </div>
@@ -160,6 +161,73 @@
       <div class="modal-actions">
         <button class="btn-pixel btn-cancel" onclick="closeModal('billing-modal')">CANCEL</button>
         <button class="btn-pixel btn-confirm" onclick="saveBillingDay()">SAVE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HELP MODAL -->
+  <div id="help-modal" class="modal hidden" onclick="closeOnBackdrop(event,'help-modal')">
+    <div class="modal-box modal-box-wide help-modal-box">
+      <div class="modal-title">? HELP &amp; SHORTCUTS</div>
+
+      <div class="help-grid">
+
+        <div class="help-section">
+          <div class="help-section-title">⌨ KEYBOARD</div>
+          <div class="help-row"><span class="help-key">1 – 9</span><span class="help-val">Launch nth project card</span></div>
+          <div class="help-row"><span class="help-key">/</span><span class="help-val">Focus search bar</span></div>
+          <div class="help-row"><span class="help-key">ESC</span><span class="help-val">Close modal / clear search</span></div>
+        </div>
+
+        <div class="help-section">
+          <div class="help-section-title">🃏 CARD BUTTONS</div>
+          <div class="help-row"><span class="help-key">✎</span><span class="help-val">Edit description, notes, color, status</span></div>
+          <div class="help-row"><span class="help-key">📁</span><span class="help-val">Open project folder in Explorer</span></div>
+          <div class="help-row"><span class="help-key">💻</span><span class="help-val">Open project in VS Code</span></div>
+          <div class="help-row"><span class="help-key">🌐</span><span class="help-val">Open localhost:PORT in browser (set port in edit)</span></div>
+          <div class="help-row"><span class="help-key">▶ LAUNCH</span><span class="help-val">Open Windows Terminal → WSL → Claude</span></div>
+          <div class="help-row"><span class="help-key">▼ NOTES</span><span class="help-val">Expand / collapse private notes</span></div>
+        </div>
+
+        <div class="help-section">
+          <div class="help-section-title">⚡ HEADER</div>
+          <div class="help-row"><span class="help-key">/ SEARCH</span><span class="help-val">Filter cards by name, description, tech</span></div>
+          <div class="help-row"><span class="help-key">⚡ Xd</span><span class="help-val">Days until billing resets — click to change date</span></div>
+          <div class="help-row"><span class="help-key">▶ N</span><span class="help-val">Launches this month (counted automatically)</span></div>
+          <div class="help-row"><span class="help-key">CONSOLE ↗</span><span class="help-val">Open console.anthropic.com in browser</span></div>
+          <div class="help-row"><span class="help-key">⊘</span><span class="help-val">Show / hide archived projects</span></div>
+          <div class="help-row"><span class="help-key">+ NEW</span><span class="help-val">Add new project (creates folder on disk)</span></div>
+        </div>
+
+        <div class="help-section">
+          <div class="help-section-title">📌 CARD INFO</div>
+          <div class="help-row"><span class="help-key">⑂ main •3</span><span class="help-val">Git branch + number of uncommitted files</span></div>
+          <div class="help-row"><span class="help-key">⏱ 2d ago</span><span class="help-val">Last file modified in project folder</span></div>
+          <div class="help-row"><span class="help-key">▶ launched</span><span class="help-val">Last time you clicked LAUNCH</span></div>
+          <div class="help-row"><span class="help-key">ACTIVE</span><span class="help-val">Status badge — set in edit modal</span></div>
+        </div>
+
+        <div class="help-section">
+          <div class="help-section-title">✎ EDIT MODAL FIELDS</div>
+          <div class="help-row"><span class="help-key">Description</span><span class="help-val">Short summary shown on card</span></div>
+          <div class="help-row"><span class="help-key">Notes</span><span class="help-val">Private notes, expandable on card</span></div>
+          <div class="help-row"><span class="help-key">Tech tags</span><span class="help-val">Comma-separated: Python, Flask, React</span></div>
+          <div class="help-row"><span class="help-key">Launch cmd</span><span class="help-val">Custom terminal command (blank = cd &amp;&amp; claude)</span></div>
+          <div class="help-row"><span class="help-key">Dev port</span><span class="help-val">Port for 🌐 browser button (e.g. 3000)</span></div>
+          <div class="help-row"><span class="help-key">⊘ Archive</span><span class="help-val">Hide project without deleting from disk</span></div>
+        </div>
+
+        <div class="help-section">
+          <div class="help-section-title">🔔 NOTIFICATIONS</div>
+          <div class="help-row"><span class="help-key">ntfy app</span><span class="help-val">Topic: Safe-Claude_Home</span></div>
+          <div class="help-row"><span class="help-key">Auto-fires</span><span class="help-val">Every time Claude finishes a response</span></div>
+          <div class="help-row"><span class="help-key">All projects</span><span class="help-val">Works in any Claude session, not just launcher</span></div>
+        </div>
+
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-pixel btn-confirm" onclick="closeModal('help-modal')">GOT IT</button>
       </div>
     </div>
   </div>
