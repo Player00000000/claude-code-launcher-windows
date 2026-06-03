@@ -31,6 +31,41 @@ STATUS_COLORS = {
 
 _always_on_top = False
 _closing       = False
+_launcher_hwnd = 0
+
+
+def _find_launcher_hwnd():
+    """Find our own window HWND by enumerating windows in this process."""
+    global _launcher_hwnd
+    if _launcher_hwnd:
+        return _launcher_hwnd
+
+    pid = os.getpid()
+    found = []
+
+    WNDENUMPROC = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_ulong, ctypes.c_ulong)
+
+    def callback(hwnd, _):
+        win_pid = ctypes.c_ulong(0)
+        ctypes.windll.user32.GetWindowThreadProcessId(hwnd, ctypes.byref(win_pid))
+        if win_pid.value == pid and ctypes.windll.user32.IsWindowVisible(hwnd):
+            found.append(hwnd)
+        return True
+
+    ctypes.windll.user32.EnumWindows(WNDENUMPROC(callback), 0)
+
+    # Prefer window with matching title
+    for hwnd in found:
+        buf = ctypes.create_unicode_buffer(256)
+        ctypes.windll.user32.GetWindowTextW(hwnd, buf, 256)
+        if "Claude Code Launcher" in buf.value:
+            _launcher_hwnd = hwnd
+            return hwnd
+
+    if found:
+        _launcher_hwnd = found[0]
+        return found[0]
+    return 0
 
 
 def load_meta():
@@ -325,19 +360,25 @@ class Api:
         global _always_on_top
         _always_on_top = not _always_on_top
         try:
-            HWND_TOPMOST    = -1
-            HWND_NOTOPMOST  = -2
-            SWP_NOMOVE      = 0x0002
-            SWP_NOSIZE      = 0x0001
-            hwnd = ctypes.windll.user32.FindWindowW(None, "Claude Code Launcher")
-            ctypes.windll.user32.SetWindowPos(
+            HWND_TOPMOST   = -1
+            HWND_NOTOPMOST = -2
+            SWP_NOMOVE     = 0x0002
+            SWP_NOSIZE     = 0x0001
+            hwnd = _find_launcher_hwnd()
+            if not hwnd:
+                return {"ok": False, "error": "Window handle not found"}
+            result = ctypes.windll.user32.SetWindowPos(
                 hwnd,
                 HWND_TOPMOST if _always_on_top else HWND_NOTOPMOST,
                 0, 0, 0, 0,
                 SWP_NOMOVE | SWP_NOSIZE,
             )
+            if not result:
+                err = ctypes.windll.kernel32.GetLastError()
+                return {"ok": False, "error": f"SetWindowPos failed: {err}"}
             return {"ok": True, "on_top": _always_on_top}
         except Exception as e:
+            _always_on_top = not _always_on_top  # revert
             return {"ok": False, "error": str(e)}
 
     def get_usage(self):
