@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CLAUDE CODE LAUNCHER</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="scanlines"></div>
+  <div class="crt-overlay"></div>
+
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">▶</span>
+        <span class="logo-text">CLAUDE CODE LAUNCHER</span>
+        <span class="cursor blink">█</span>
+      </div>
+      <div class="header-meta">
+        <span class="project-count">{{ projects|length }} PROJECTS</span>
+        <button class="btn-pixel btn-add" onclick="openAddModal()">+ NEW PROJECT</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="grid" id="project-grid">
+      {% for project in projects %}
+      <div class="card" data-name="{{ project.name }}" data-path="{{ project.path }}" data-color="{{ project.color }}" style="--card-color: {{ project.color }}">
+        <div class="card-header">
+          <div class="card-dot" style="background: {{ project.color }}"></div>
+          <span class="card-name">{{ project.name }}</span>
+          <button class="btn-edit" onclick="openEditModal('{{ project.name }}', event)" title="Edit">✎</button>
+        </div>
+        <div class="card-desc" id="desc-{{ loop.index }}">{{ project.description }}</div>
+        <div class="card-tech">
+          {% for tag in project.tech %}
+          <span class="tag">{{ tag }}</span>
+          {% endfor %}
+        </div>
+        <div class="card-footer">
+          <button class="btn-pixel btn-launch" onclick="launchProject('{{ project.name }}', '{{ project.path }}', this)">
+            <span class="btn-label">▶ LAUNCH</span>
+          </button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </main>
+
+  <!-- TOAST -->
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- ADD MODAL -->
+  <div id="add-modal" class="modal hidden" onclick="closeOnBackdrop(event, 'add-modal')">
+    <div class="modal-box">
+      <div class="modal-title">+ NEW PROJECT</div>
+      <div class="field-group">
+        <label>PROJECT NAME</label>
+        <input type="text" id="add-name" placeholder="My New Project" maxlength="50">
+      </div>
+      <div class="field-group">
+        <label>DESCRIPTION</label>
+        <textarea id="add-desc" placeholder="What does it do?" rows="3" maxlength="200"></textarea>
+      </div>
+      <div class="field-group">
+        <label>TECH TAGS (comma-separated)</label>
+        <input type="text" id="add-tech" placeholder="Python, Flask, React">
+      </div>
+      <div class="field-group">
+        <label>COLOR</label>
+        <div class="color-row">
+          <input type="color" id="add-color" value="#888899">
+          <div class="color-swatches">
+            <span class="swatch" style="background:#ff6b6b" onclick="setSwatch('#ff6b6b','add-color')"></span>
+            <span class="swatch" style="background:#4ecdc4" onclick="setSwatch('#4ecdc4','add-color')"></span>
+            <span class="swatch" style="background:#ffe66d" onclick="setSwatch('#ffe66d','add-color')"></span>
+            <span class="swatch" style="background:#a8e063" onclick="setSwatch('#a8e063','add-color')"></span>
+            <span class="swatch" style="background:#c77dff" onclick="setSwatch('#c77dff','add-color')"></span>
+            <span class="swatch" style="background:#ff9f43" onclick="setSwatch('#ff9f43','add-color')"></span>
+            <span class="swatch" style="background:#48dbfb" onclick="setSwatch('#48dbfb','add-color')"></span>
+            <span class="swatch" style="background:#ff6b9d" onclick="setSwatch('#ff6b9d','add-color')"></span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-pixel btn-cancel" onclick="closeModal('add-modal')">CANCEL</button>
+        <button class="btn-pixel btn-confirm" onclick="addProject()">CREATE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT MODAL -->
+  <div id="edit-modal" class="modal hidden" onclick="closeOnBackdrop(event, 'edit-modal')">
+    <div class="modal-box">
+      <div class="modal-title">✎ EDIT PROJECT</div>
+      <input type="hidden" id="edit-name">
+      <div class="field-group">
+        <label>DESCRIPTION</label>
+        <textarea id="edit-desc" rows="3" maxlength="200"></textarea>
+      </div>
+      <div class="field-group">
+        <label>TECH TAGS (comma-separated)</label>
+        <input type="text" id="edit-tech" placeholder="Python, Flask, React">
+      </div>
+      <div class="field-group">
+        <label>COLOR</label>
+        <div class="color-row">
+          <input type="color" id="edit-color">
+          <div class="color-swatches">
+            <span class="swatch" style="background:#ff6b6b" onclick="setSwatch('#ff6b6b','edit-color')"></span>
+            <span class="swatch" style="background:#4ecdc4" onclick="setSwatch('#4ecdc4','edit-color')"></span>
+            <span class="swatch" style="background:#ffe66d" onclick="setSwatch('#ffe66d','edit-color')"></span>
+            <span class="swatch" style="background:#a8e063" onclick="setSwatch('#a8e063','edit-color')"></span>
+            <span class="swatch" style="background:#c77dff" onclick="setSwatch('#c77dff','edit-color')"></span>
+            <span class="swatch" style="background:#ff9f43" onclick="setSwatch('#ff9f43','edit-color')"></span>
+            <span class="swatch" style="background:#48dbfb" onclick="setSwatch('#48dbfb','edit-color')"></span>
+            <span class="swatch" style="background:#ff6b9d" onclick="setSwatch('#ff6b9d','edit-color')"></span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-pixel btn-cancel" onclick="closeModal('edit-modal')">CANCEL</button>
+        <button class="btn-pixel btn-confirm" onclick="saveEdit()">SAVE</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
