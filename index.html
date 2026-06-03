@@ -16,12 +16,18 @@
     <div class="header-inner">
       <div class="logo">
         <span class="logo-icon">▶</span>
-        <span class="logo-text">CLAUDE CODE LAUNCHER</span>
+        <span class="logo-text">CLAUDE CODE</span>
         <span class="cursor blink">█</span>
       </div>
+      <input class="search-bar" id="search-bar" type="text"
+             placeholder="/ SEARCH..." oninput="filterProjects(this.value)"
+             autocomplete="off" spellcheck="false">
       <div class="header-meta">
+        <div id="credit-widget" class="credit-widget"></div>
         <span class="project-count" id="project-count">— PROJECTS</span>
-        <button class="btn-pixel btn-add" onclick="openAddModal()">+ NEW PROJECT</button>
+        <button class="btn-pixel btn-archive-toggle" id="archive-toggle"
+                onclick="toggleArchivedView()" title="Show archived projects">⊘</button>
+        <button class="btn-pixel btn-add" onclick="openAddModal()">+ NEW</button>
       </div>
     </div>
   </header>
@@ -84,25 +90,39 @@
 
   <!-- EDIT MODAL -->
   <div id="edit-modal" class="modal hidden" onclick="closeOnBackdrop(event,'edit-modal')">
-    <div class="modal-box">
+    <div class="modal-box modal-box-wide">
       <div class="modal-title">✎ EDIT PROJECT</div>
       <input type="hidden" id="edit-name">
       <div class="field-group">
         <label>DESCRIPTION</label>
-        <textarea id="edit-desc" rows="3" maxlength="200"></textarea>
+        <textarea id="edit-desc" rows="2" maxlength="200"></textarea>
+      </div>
+      <div class="field-group">
+        <label>NOTES (private, expandable on card)</label>
+        <textarea id="edit-notes" rows="2" maxlength="500" placeholder="Private notes..."></textarea>
       </div>
       <div class="field-group">
         <label>TECH TAGS (comma-separated)</label>
         <input type="text" id="edit-tech" placeholder="Python, Flask, React">
       </div>
       <div class="field-group">
-        <label>STATUS</label>
-        <select id="edit-status" class="status-select">
-          <option value="ACTIVE">ACTIVE</option>
-          <option value="WIP">WIP</option>
-          <option value="PAUSED">PAUSED</option>
-          <option value="DONE">DONE</option>
-        </select>
+        <label>CUSTOM LAUNCH CMD (blank = cd &amp;&amp; claude)</label>
+        <input type="text" id="edit-launch-cmd" placeholder="npm run dev &amp;&amp; claude">
+      </div>
+      <div class="field-row">
+        <div class="field-group" style="flex:1">
+          <label>STATUS</label>
+          <select id="edit-status" class="status-select">
+            <option value="ACTIVE">ACTIVE</option>
+            <option value="WIP">WIP</option>
+            <option value="PAUSED">PAUSED</option>
+            <option value="DONE">DONE</option>
+          </select>
+        </div>
+        <div class="field-group" style="width:110px">
+          <label>DEV PORT</label>
+          <input type="text" id="edit-port" placeholder="3000" maxlength="5">
+        </div>
       </div>
       <div class="field-group">
         <label>COLOR</label>
@@ -121,8 +141,25 @@
         </div>
       </div>
       <div class="modal-actions">
+        <button class="btn-pixel btn-archive" id="edit-archive-btn" onclick="archiveFromEdit()">⊘ ARCHIVE</button>
         <button class="btn-pixel btn-cancel" onclick="closeModal('edit-modal')">CANCEL</button>
         <button class="btn-pixel btn-confirm" onclick="saveEdit()">SAVE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BILLING DAY MODAL -->
+  <div id="billing-modal" class="modal hidden" onclick="closeOnBackdrop(event,'billing-modal')">
+    <div class="modal-box" style="max-width:340px">
+      <div class="modal-title">⚡ BILLING RESET DATE</div>
+      <div class="field-group">
+        <label>DAY OF MONTH (1–28)</label>
+        <input type="number" id="billing-day-input" min="1" max="28" placeholder="1">
+      </div>
+      <p class="modal-hint">Day when Anthropic billing resets. Used to calculate countdown timer.</p>
+      <div class="modal-actions">
+        <button class="btn-pixel btn-cancel" onclick="closeModal('billing-modal')">CANCEL</button>
+        <button class="btn-pixel btn-confirm" onclick="saveBillingDay()">SAVE</button>
       </div>
     </div>
   </div>
