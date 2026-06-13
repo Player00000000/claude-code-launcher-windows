@@ -546,7 +546,8 @@ async function openSettingsModal() {
   setTimeout(() => document.getElementById('settings-win-base').focus(), 50);
   // Load orphan count async
   try {
-    const n = await window.pywebview.api.get_orphan_count();
+    const r = await window.pywebview.api.get_orphan_count();
+    const n = (r && r.count) || 0;
     const lbl = document.getElementById('orphan-count-label');
     if (lbl) lbl.textContent = n === 0 ? 'No orphan meta entries' : `${n} orphan meta entr${n === 1 ? 'y' : 'ies'}`;
     const btn = document.getElementById('prune-btn');
@@ -557,11 +558,12 @@ async function openSettingsModal() {
 async function doPruneMeta() {
   const r = await window.pywebview.api.prune_meta();
   if (r.ok) {
+    const n = (r.pruned || []).length;
     const lbl = document.getElementById('orphan-count-label');
-    if (lbl) lbl.textContent = `Pruned ${r.removed} entr${r.removed === 1 ? 'y' : 'ies'}`;
+    if (lbl) lbl.textContent = `Pruned ${n} entr${n === 1 ? 'y' : 'ies'}`;
     const btn = document.getElementById('prune-btn');
     if (btn) btn.disabled = true;
-    showToast(`PRUNED ${r.removed} ORPHAN(S)`, 'success');
+    showToast(`PRUNED ${n} ORPHAN(S)`, 'success');
     setTimeout(() => loadProjects(true), 400);
   } else {
     showToast('ERROR: ' + (r.error || 'Unknown'), 'error');
