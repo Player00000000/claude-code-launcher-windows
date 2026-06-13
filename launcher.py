@@ -925,6 +925,33 @@ class Api:
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
+    def create_desktop_shortcut(self):
+        try:
+            desktop   = os.path.join(os.environ.get("USERPROFILE", ""), "Desktop")
+            vbs_path  = os.path.join(SCRIPT_DIR, "start_silent.vbs")
+            lnk_path  = os.path.join(desktop, "Claude Code Launcher.lnk")
+            icon_path = os.path.join(SCRIPT_DIR, "icon.ico")
+            ps_cmd = (
+                f'$s=$([System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory());'
+                f'$WshShell=New-Object -ComObject WScript.Shell;'
+                f'$lnk=$WshShell.CreateShortcut("{lnk_path}");'
+                f'$lnk.TargetPath="wscript.exe";'
+                f'$lnk.Arguments=\'"{vbs_path}"\';'
+                f'$lnk.WorkingDirectory="{SCRIPT_DIR}";'
+                f'$lnk.IconLocation="{icon_path}";'
+                f'$lnk.Description="Claude Code Launcher";'
+                f'$lnk.Save()'
+            )
+            r = subprocess.run(
+                ["powershell", "-NoProfile", "-Command", ps_cmd],
+                capture_output=True, timeout=10,
+            )
+            if r.returncode != 0:
+                return {"ok": False, "error": r.stderr.strip()[:200]}
+            return {"ok": True}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
 
 if __name__ == "__main__":
     threading.Thread(target=_scan_worker, daemon=True).start()

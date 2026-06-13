@@ -594,6 +594,28 @@ async function saveSettingsModal() {
   }
 }
 
+/* ── DESKTOP SHORTCUT ── */
+async function createDesktopShortcut() {
+  const btn = event.target;
+  btn.textContent = '... CREATING';
+  btn.disabled = true;
+  try {
+    const data = await window.pywebview.api.create_desktop_shortcut();
+    if (data.ok) {
+      showToast('DESKTOP SHORTCUT CREATED', 'success');
+      btn.textContent = '✓ SHORTCUT CREATED';
+    } else {
+      showToast('ERROR: ' + (data.error || 'Unknown'), 'error');
+      btn.textContent = '+ CREATE DESKTOP SHORTCUT';
+    }
+  } catch(e) {
+    showToast('ERROR: ' + e.message, 'error');
+    btn.textContent = '+ CREATE DESKTOP SHORTCUT';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 /* ── PHASE STUBS (filled in later phases) ── */
 function initSummer()  { if (window.summer) window.summer.init(); }
 function hideSummer()  { if (window.summer) window.summer.hide(); }
