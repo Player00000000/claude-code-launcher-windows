@@ -566,3 +566,151 @@ main {
   .help-grid { grid-template-columns: 1fr; }
   .help-modal-box { max-width: 100%; }
 }
+
+/* ── GIT AHEAD/BEHIND ── */
+.git-ahead  { color: #a8e063; margin-left: 3px; }
+.git-behind { color: #ff6b6b; margin-left: 1px; }
+
+/* ── SETTINGS BUTTON ── */
+.btn-settings {
+  background: transparent;
+  color: var(--text-dim);
+  border: 2px solid var(--border-bright);
+  box-shadow: none;
+  padding: 6px 10px; font-size: 12px;
+}
+.btn-settings:hover { color: var(--text); border-color: var(--accent); }
+
+/* ── THEME RADIO GROUP ── */
+.theme-options { display: flex; gap: 10px; flex-wrap: wrap; }
+.theme-option  { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.theme-option input[type="radio"] { accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer; }
+.theme-option span {
+  font-family: var(--font-pixel); font-size: 8px;
+  color: var(--text-dim);
+}
+.theme-option:hover span { color: var(--text); }
+
+/* ── THEMES ── */
+html[data-theme="gameboy"] {
+  --bg:  #0f380f;
+  --bg2: #154515;
+  --bg3: #1a5c1a;
+  --border: #2a6e2a;
+  --border-bright: #3a9e3a;
+  --text: #9bbc0f;
+  --text-dim: #5a7a0f;
+  --accent: #8bac0f;
+  --accent2: #306230;
+}
+html[data-theme="amber"] {
+  --bg:  #100c00;
+  --bg2: #1a1400;
+  --bg3: #261e00;
+  --border: #3a2e00;
+  --border-bright: #5a4800;
+  --text: #ffb000;
+  --text-dim: #a07000;
+  --accent: #ff8c00;
+  --accent2: #ffcc44;
+}
+
+/* ── LIVE SESSION INDICATOR (Phase 3) ── */
+.live-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #a8e063;
+  margin-left: 6px;
+  animation: live-pulse 1.5s ease-in-out infinite;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 4px #a8e063; }
+  50%       { opacity: 0.4; box-shadow: none; }
+}
+.card-usage {
+  font-family: var(--font-vt); font-size: 15px;
+  color: var(--text-dim); opacity: 0.7;
+  margin-top: -4px;
+}
+
+/* ── COMMIT/PUSH BUTTON ── */
+.btn-commit {
+  background: var(--bg3);
+  border: 2px solid #ffe66d;
+  color: #ffe66d; cursor: pointer;
+  font-size: 12px; padding: 4px 8px; line-height: 1;
+  transition: border-color 0.12s, transform 0.08s;
+}
+.btn-commit:hover { background: rgba(255,230,109,0.1); transform: translateY(-1px); }
+
+/* ── SESSION HISTORY MODAL ── */
+.session-list { display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto; }
+.session-row {
+  display: flex; flex-direction: column; gap: 3px;
+  padding: 10px 12px;
+  background: var(--bg3); border: 2px solid var(--border-bright);
+  cursor: pointer; transition: border-color 0.12s;
+}
+.session-row:hover { border-color: var(--accent); }
+.session-row-header {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+.session-ago  { font-family: var(--font-pixel); font-size: 7px; color: var(--text-dim); }
+.session-meta { font-family: var(--font-pixel); font-size: 6px; color: var(--text-dim); }
+.session-prompt {
+  font-family: var(--font-vt); font-size: 18px;
+  color: var(--text-dim); line-height: 1.3;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* ── COMMIT MODAL TEXTAREA ── */
+.commit-file-list {
+  font-family: var(--font-vt); font-size: 16px;
+  color: #ffe66d; background: var(--bg3);
+  border: 2px solid var(--border);
+  padding: 8px 10px; max-height: 120px; overflow-y: auto;
+  white-space: pre; resize: none;
+}
+
+/* ── DANGER ZONE (Phase 5) ── */
+.danger-zone {
+  border-top: 2px solid rgba(255,107,107,0.4);
+  padding-top: 14px; display: flex; gap: 8px; align-items: center;
+}
+.btn-danger {
+  background: transparent;
+  color: #ff6b6b; border: 2px solid #ff6b6b;
+  font-family: var(--font-pixel); font-size: 8px;
+  padding: 6px 10px; cursor: pointer;
+  transition: background 0.12s;
+}
+.btn-danger:hover { background: rgba(255,107,107,0.15); }
+
+/* ── SUMMER ZONE ── */
+#summer-zone {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: 52px; pointer-events: none;
+  z-index: 50;
+}
+#summer {
+  position: absolute; bottom: 4px;
+  width: 48px; height: 48px;
+  image-rendering: pixelated;
+  pointer-events: auto; cursor: pointer;
+  transform: translateX(40px);
+}
+#summer-bubble {
+  position: absolute; bottom: 52px;
+  font-size: 16px; pointer-events: none;
+  animation: bubble-pop 1.8s ease forwards;
+  display: none;
+}
+@keyframes bubble-pop {
+  0%   { opacity: 0; transform: translateY(4px); }
+  20%  { opacity: 1; transform: translateY(0); }
+  80%  { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-8px); }
+}

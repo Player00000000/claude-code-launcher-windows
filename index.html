@@ -35,7 +35,8 @@
                 onclick="toggleView()" title="Switch to list view">☰</button>
         <button class="btn-pixel btn-archive-toggle" id="archive-toggle"
                 onclick="toggleArchivedView()" title="Show archived projects">⊘</button>
-<button class="btn-pixel btn-help" onclick="openHelp()" title="Help  (press ?)">?</button>
+<button class="btn-pixel btn-settings" onclick="openSettingsModal()" title="Settings">⚙</button>
+        <button class="btn-pixel btn-help" onclick="openHelp()" title="Help  (press ?)">?</button>
         <button class="btn-pixel btn-add" onclick="openAddModal()">+ NEW</button>
       </div>
     </div>
@@ -89,6 +90,11 @@
             <span class="swatch" style="background:#ff6b9d" onclick="setSwatch('#ff6b9d','add-color')"></span>
           </div>
         </div>
+      </div>
+      <div class="field-group">
+        <label class="theme-option">
+          <input type="checkbox" id="add-create-repo"> <span>CREATE PRIVATE GITHUB REPO</span>
+        </label>
       </div>
       <div class="modal-actions">
         <button class="btn-pixel btn-cancel" onclick="closeModal('add-modal')">CANCEL</button>
@@ -153,6 +159,10 @@
         <button class="btn-pixel btn-archive" id="edit-archive-btn" onclick="archiveFromEdit()">⊘ ARCHIVE</button>
         <button class="btn-pixel btn-cancel" onclick="closeModal('edit-modal')">CANCEL</button>
         <button class="btn-pixel btn-confirm" onclick="saveEdit()">SAVE</button>
+      </div>
+      <div class="danger-zone">
+        <button class="btn-danger" onclick="openRenameFromEdit()">✎ RENAME</button>
+        <button class="btn-danger" onclick="openDeleteFromEdit()">⊗ DELETE</button>
       </div>
     </div>
   </div>
@@ -240,6 +250,123 @@
     </div>
   </div>
 
+  <!-- SETTINGS MODAL -->
+  <div id="settings-modal" class="modal hidden" onclick="closeOnBackdrop(event,'settings-modal')">
+    <div class="modal-box modal-box-wide">
+      <div class="modal-title">⚙ SETTINGS</div>
+      <div class="field-group">
+        <label>PROJECTS BASE DIR (Windows path)</label>
+        <input type="text" id="settings-win-base" placeholder="D:\Claude Code" maxlength="200">
+      </div>
+      <div class="field-group">
+        <label>WSL DISTRO NAME</label>
+        <input type="text" id="settings-wsl-distro" placeholder="Ubuntu" maxlength="60">
+      </div>
+      <div class="field-group">
+        <label>POLL INTERVAL (seconds)</label>
+        <input type="number" id="settings-poll" min="2" max="60" placeholder="5">
+      </div>
+      <div class="field-group">
+        <label>SCAN INTERVAL (seconds)</label>
+        <input type="number" id="settings-scan" min="10" max="600" placeholder="60">
+      </div>
+      <div class="field-group">
+        <label>THEME</label>
+        <div class="theme-options">
+          <label class="theme-option"><input type="radio" name="theme" value="neon"><span>NEON (default)</span></label>
+          <label class="theme-option"><input type="radio" name="theme" value="gameboy"><span>GAMEBOY</span></label>
+          <label class="theme-option"><input type="radio" name="theme" value="amber"><span>AMBER CRT</span></label>
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="theme-option">
+          <input type="checkbox" id="settings-summer"> <span>SUMMER (pomeranian mascot)</span>
+        </label>
+      </div>
+      <div class="field-group">
+        <label>MAINTENANCE</label>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span id="orphan-count-label" style="opacity:0.7;font-size:0.85em">Loading...</span>
+          <button class="btn-pixel btn-cancel" id="prune-btn" onclick="doPruneMeta()" style="padding:4px 12px;font-size:0.8em">PRUNE ORPHANS</button>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-pixel btn-cancel" onclick="closeModal('settings-modal')">CANCEL</button>
+        <button class="btn-pixel btn-confirm" onclick="saveSettingsModal()">SAVE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SESSION HISTORY MODAL -->
+  <div id="sessions-modal" class="modal hidden" onclick="closeOnBackdrop(event,'sessions-modal')">
+    <div class="modal-box modal-box-wide">
+      <div class="modal-title" id="sessions-modal-title">SESSION HISTORY</div>
+      <div id="sessions-list" class="session-list"></div>
+      <div class="modal-actions">
+        <button class="btn-pixel btn-cancel" onclick="closeModal('sessions-modal')">CLOSE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMMIT & PUSH MODAL -->
+  <div id="commit-modal" class="modal hidden" onclick="closeOnBackdrop(event,'commit-modal')">
+    <div class="modal-box modal-box-wide">
+      <div class="modal-title">⇧ COMMIT &amp; PUSH</div>
+      <input type="hidden" id="commit-project-name">
+      <div class="field-group">
+        <label>CHANGED FILES</label>
+        <textarea id="commit-file-list" class="commit-file-list" rows="5" readonly></textarea>
+      </div>
+      <div class="field-group">
+        <label>COMMIT MESSAGE</label>
+        <input type="text" id="commit-message" maxlength="200" placeholder="Update: description of changes">
+      </div>
+      <div class="modal-actions">
+        <button class="btn-pixel btn-cancel" onclick="closeModal('commit-modal')">CANCEL</button>
+        <button class="btn-pixel btn-confirm" onclick="doCommitPush()">COMMIT &amp; PUSH</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DELETE CONFIRM MODAL -->
+  <div id="delete-modal" class="modal hidden" onclick="closeOnBackdrop(event,'delete-modal')">
+    <div class="modal-box" style="max-width:380px">
+      <div class="modal-title" style="color:#ff6b6b">⚠ DELETE PROJECT</div>
+      <input type="hidden" id="delete-project-name">
+      <p class="modal-hint">This sends the folder to the Recycle Bin. Type the project name to confirm.</p>
+      <div class="field-group">
+        <label>TYPE PROJECT NAME TO CONFIRM</label>
+        <input type="text" id="delete-confirm-input" placeholder="Project name">
+      </div>
+      <div class="modal-actions">
+        <button class="btn-pixel btn-cancel" onclick="closeModal('delete-modal')">CANCEL</button>
+        <button class="btn-pixel btn-danger" onclick="doDeleteProject()">DELETE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RENAME MODAL -->
+  <div id="rename-modal" class="modal hidden" onclick="closeOnBackdrop(event,'rename-modal')">
+    <div class="modal-box" style="max-width:380px">
+      <div class="modal-title">✎ RENAME PROJECT</div>
+      <input type="hidden" id="rename-project-old">
+      <div class="field-group">
+        <label>NEW NAME</label>
+        <input type="text" id="rename-project-new" maxlength="100" placeholder="New project name">
+      </div>
+      <div class="modal-actions">
+        <button class="btn-pixel btn-cancel" onclick="closeModal('rename-modal')">CANCEL</button>
+        <button class="btn-pixel btn-confirm" onclick="doRenameProject()">RENAME</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="summer-zone" style="display:none">
+    <div id="summer"></div>
+    <div id="summer-bubble"></div>
+  </div>
+
   <script src="static/app.js"></script>
+  <script src="static/summer.js"></script>
 </body>
 </html>
