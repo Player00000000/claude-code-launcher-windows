@@ -60,13 +60,23 @@ def encode_project_dir(wsl_path):
 def _claude_projects_root(settings):
     """Return the Windows-accessible path to ~/.claude/projects/, or None."""
     distro = settings.get("wsl_distro", "Ubuntu")
+    user   = settings.get("wsl_user", "").strip()
     for prefix in (f"\\\\wsl.localhost\\{distro}", f"\\\\wsl$\\{distro}"):
-        p = os.path.join(prefix, "home", "admins", ".claude", "projects")
-        try:
-            if os.path.isdir(p):
-                return p
-        except Exception:
-            pass
+        if user:
+            candidates = [os.path.join(prefix, "home", user, ".claude", "projects")]
+        else:
+            try:
+                home       = os.path.join(prefix, "home")
+                candidates = [os.path.join(home, u, ".claude", "projects")
+                              for u in os.listdir(home)]
+            except Exception:
+                candidates = []
+        for p in candidates:
+            try:
+                if os.path.isdir(p):
+                    return p
+            except Exception:
+                pass
     return None
 
 
