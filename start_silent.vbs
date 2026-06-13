@@ -1,2 +1,4 @@
 Set WshShell = CreateObject("WScript.Shell")
-WshShell.Run "py.exe ""D:\Claude Code\claude-code-launcher\launcher.py""", 0, False
+Set fso = CreateObject("Scripting.FileSystemObject")
+scriptDir = fso.GetParentFolderName(WScript.ScriptFullName)
+WshShell.Run "py.exe """ & scriptDir & "\launcher.py""", 0, False

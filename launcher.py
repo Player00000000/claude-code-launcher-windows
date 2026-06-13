@@ -49,13 +49,16 @@ SETTINGS_FILE = os.path.join(SCRIPT_DIR, "settings.json")
 EXCLUDE       = {"launcher", ".git", "__pycache__"}
 SKIP_DIRS     = {".git", "node_modules", "__pycache__", ".next", "venv", ".venv", ".mypy_cache", "dist", "build"}
 
+# Default projects folder = parent directory of this script
+_DEFAULT_WIN_BASE = os.path.dirname(SCRIPT_DIR)
+
 # Defaults — overridden at startup from settings.json
-WIN_BASE   = r"D:\Claude Code"
+WIN_BASE   = _DEFAULT_WIN_BASE
 WSL_BASE   = "/mnt/d/Claude Code"
 
 DEFAULT_SETTINGS = {
-    "win_base":          r"D:\Claude Code",
-    "wsl_base":          "/mnt/d/Claude Code",
+    "win_base":          _DEFAULT_WIN_BASE,
+    "wsl_base":          "",
     "wsl_distro":        "Ubuntu",
     "poll_interval_sec": 5,
     "scan_interval_sec": 60,
