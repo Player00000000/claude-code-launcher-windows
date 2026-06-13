@@ -465,14 +465,24 @@ class Api:
             usage.setdefault("launches", {})[mk] = usage.get("launches", {}).get(mk, 0) + 1
             save_usage(usage)
 
-            cmd = launch_cmd or meta.get(name, {}).get("launch_cmd", "")
-            if not cmd:
-                cmd = f"cd {sq(wsl_path)} && claude"
+            win_path = os.path.join(WIN_BASE, name)
+            custom = launch_cmd or meta.get(name, {}).get("launch_cmd", "")
+            shell_cmd = custom if custom else "claude"
 
-            subprocess.Popen(
-                ["wt.exe", "wsl.exe", "-e", "bash", "-ic", cmd],
-                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-            )
+            wt = shutil.which("wt.exe") or shutil.which("wt")
+            if wt:
+                subprocess.Popen(
+                    [wt, "cmd.exe", "/k", shell_cmd],
+                    cwd=win_path,
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                )
+            else:
+                subprocess.Popen(
+                    ["cmd.exe", "/k", shell_cmd],
+                    cwd=win_path,
+                    creationflags=subprocess.CREATE_NEW_CONSOLE,
+                    close_fds=True,
+                )
             refresh_now(name)
             return {"ok": True}
         except Exception as e:
@@ -732,18 +742,28 @@ class Api:
             usage.setdefault("launches", {})[mk] = usage.get("launches", {}).get(mk, 0) + 1
             save_usage(usage)
 
+            win_path = os.path.join(WIN_BASE, name)
             if session_id:
                 if not re.match(r'^[0-9a-f\-]{36}$', session_id):
                     return {"ok": False, "error": "Invalid session id"}
-                import shlex
-                cmd = f"cd {sq(wsl_path)} && claude --resume {shlex.quote(session_id)}"
+                shell_cmd = f"claude --resume {session_id}"
             else:
-                cmd = f"cd {sq(wsl_path)} && claude --continue"
+                shell_cmd = "claude --continue"
 
-            subprocess.Popen(
-                ["wt.exe", "wsl.exe", "-e", "bash", "-ic", cmd],
-                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-            )
+            wt = shutil.which("wt.exe") or shutil.which("wt")
+            if wt:
+                subprocess.Popen(
+                    [wt, "cmd.exe", "/k", shell_cmd],
+                    cwd=win_path,
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                )
+            else:
+                subprocess.Popen(
+                    ["cmd.exe", "/k", shell_cmd],
+                    cwd=win_path,
+                    creationflags=subprocess.CREATE_NEW_CONSOLE,
+                    close_fds=True,
+                )
             refresh_now(name)
             return {"ok": True}
         except Exception as e:

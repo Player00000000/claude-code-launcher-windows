@@ -1,2 +1,2 @@
 @echo off
-py.exe "D:\Claude Code\launcher\launcher.py"
+py.exe "D:\Claude Code\claude-code-launcher\launcher.py"

@@ -6,6 +6,7 @@ Runs on Windows Python; reads session files via UNC path (wsl.localhost).
 import json
 import os
 import re
+import subprocess
 import time
 import threading
 from datetime import datetime, timezone
@@ -57,8 +58,22 @@ def encode_project_dir(wsl_path):
     return re.sub(r"[^A-Za-z0-9]", "-", wsl_path)
 
 
+def _wsl_available():
+    """Return True only if WSL is installed and running."""
+    try:
+        r = subprocess.run(
+            ["wsl.exe", "--status"],
+            capture_output=True, timeout=3,
+        )
+        return r.returncode == 0
+    except Exception:
+        return False
+
+
 def _claude_projects_root(settings):
     """Return the Windows-accessible path to ~/.claude/projects/, or None."""
+    if not _wsl_available():
+        return None
     distro = settings.get("wsl_distro", "Ubuntu")
     user   = settings.get("wsl_user", "").strip()
     for prefix in (f"\\\\wsl.localhost\\{distro}", f"\\\\wsl$\\{distro}"):
