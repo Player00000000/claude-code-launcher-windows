@@ -697,13 +697,13 @@ html[data-theme="amber"] {
 }
 #summer {
   position: absolute; bottom: 4px;
-  width: 48px; height: 48px;
+  width: 64px; height: 64px;
   image-rendering: pixelated;
   pointer-events: auto; cursor: pointer;
   transform: translateX(40px);
 }
 #summer-bubble {
-  position: absolute; bottom: 52px;
+  position: absolute; bottom: 68px;
   font-size: 16px; pointer-events: none;
   animation: bubble-pop 1.8s ease forwards;
   display: none;

@@ -1,348 +1,121 @@
 """
-make_sprites.py — Generate Summer the pomeranian sprite sheet.
-Run once: py.exe make_sprites.py
-Outputs: static/summer.png (15 frames, 16x16 each, one row = 240x16)
-Scaled to 48x48 via CSS image-rendering:pixelated.
+make_sprites.py — Generate Summer sprite sheet from Pom.png.
+Run: py.exe make_sprites.py  (Windows)  or  python3 make_sprites.py  (WSL)
+Output: static/summer.png  (15 frames × 64×64, one row = 960×64 RGBA)
 """
 import os
-from PIL import Image
+from PIL import Image, ImageDraw
 
-# Palette
-O = (232, 146, 58)   # orange fur
-C = (245, 215, 160)  # cream belly/face
-D = (58, 42, 26)     # dark outline
-P = (255, 180, 180)  # pink tongue/nose
-W = (255, 255, 255)  # white highlight eyes
-B = (40, 40, 80)     # dark eye
-_ = (0, 0, 0, 0)     # transparent
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+SRC        = os.path.join(SCRIPT_DIR, "Pom.png")
+OUT        = os.path.join(SCRIPT_DIR, "static", "summer.png")
 
-def px(row_strings, palette):
-    """Convert list of 16 strings (16 chars) to a 16x16 RGBA image."""
-    img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
-    for y, row in enumerate(row_strings):
-        for x, ch in enumerate(row):
-            if ch in palette:
-                img.putpixel((x, y), palette[ch] + ((255,) if len(palette[ch]) == 3 else ()))
-    return img
+FRAME_W, FRAME_H = 64, 64
 
-# Character mapping
-pal = {
-    'O': O + (255,),
-    'C': C + (255,),
-    'D': D + (255,),
-    'P': P + (255,),
-    'W': W + (255,),
-    'B': B + (255,),
-    '.': (0, 0, 0, 0),
-}
 
-# Helper to pad rows to 16 chars
-def r(s): return s.ljust(16, '.')
+def load_base():
+    """Downsample Pom.png to 64×64 RGBA using NEAREST (no anti-alias)."""
+    img = Image.open(SRC).convert("RGBA")
+    return img.resize((FRAME_W, FRAME_H), Image.NEAREST)
 
-# ── Frame definitions (16 rows of 16 chars each) ──
 
-WALK1 = [
-    r('....DDDDD.......'),
-    r('...DOOOOOD......'),
-    r('..DOOOOOODD.....'),
-    r('.DOOOCCOOOOD....'),
-    r('.DOOOCCOOODD....'),
-    r('.DOOOOOOOOOD....'),
-    r('..DOOOOOOOD.....'),
-    r('...DOOOOOD......'),
-    r('....DOOOD.......'),
-    r('...DOOOOOD......'),
-    r('..DOOOOOOOD.....'),
-    r('.DOOOOOOOOOD....'),
-    r('.DO......OOD....'),
-    r('..D......DD.....'),
-    r('...DDDD.........'),
-    r('................'),
-]
+def shift_body(base, dy=0, dx=0):
+    """Shift entire image by dx,dy pixels (blank fills transparent)."""
+    out = Image.new("RGBA", (FRAME_W, FRAME_H), (0, 0, 0, 0))
+    out.paste(base, (dx, dy))
+    return out
 
-WALK2 = [
-    r('....DDDDD.......'),
-    r('...DOOOOOD......'),
-    r('..DOOOOOODD.....'),
-    r('.DOOOCCOOOOD....'),
-    r('.DOOOCCOOODD....'),
-    r('.DOOOOOOOOOD....'),
-    r('..DOOOOOOOD.....'),
-    r('...DOOOOOD......'),
-    r('....DOOOD.......'),
-    r('...DOOOOOD......'),
-    r'..DOOOOOOOD.....',
-    r'.DOOOOOOOOOOD...',
-    r'.DO.....OOOOD...',
-    r'..DD....DDDD....',
-    r'................',
-    r'................',
-]
 
-WALK3 = [
-    r('....DDDDD.......'),
-    r('...DOOOOOD......'),
-    r'..DOOOOOODD.....',
-    r'.DOOOCCOOOOD....',
-    r'.DOOOCCOOODD....',
-    r'.DOOOOOOOOOD....',
-    r'..DOOOOOOOD.....',
-    r'...DOOOOOD......',
-    r'....DOOOD.......',
-    r'..DDOOOOODD.....',
-    r'.DOOOOOOOOOD....',
-    r'.DO.....OOOD....',
-    r'..D.....DOOD....',
-    r'...DDDDDDD......',
-    r'................',
-    r'................',
-]
+def shift_legs(base, dx=0):
+    """Shift bottom 18px of image horizontally (leg movement)."""
+    out = base.copy()
+    legs_y = FRAME_H - 18
+    legs   = base.crop((0, legs_y, FRAME_W, FRAME_H))
+    # blank the legs area
+    draw   = ImageDraw.Draw(out)
+    draw.rectangle([0, legs_y, FRAME_W - 1, FRAME_H - 1], fill=(0, 0, 0, 0))
+    # paste shifted (clip within bounds)
+    out.paste(legs, (dx, legs_y))
+    return out
 
-WALK4 = [
-    r'....DDDDD.......',
-    r'...DOOOOOD......',
-    r'..DOOOOOODD.....',
-    r'.DOOOCCOOOOD....',
-    r'.DOOOCCOOODD....',
-    r'.DOOOOOOOOOD....',
-    r'..DOOOOOOOD.....',
-    r'...DOOOOOD......',
-    r'....DOOOD.......',
-    r'...DOOOOOD......',
-    r'..DOOOOOOOOD....',
-    r'.DOOOOOOOOOD....',
-    r'.DOO....OOOD....',
-    r'..DDDDDDDDD.....',
-    r'................',
-    r'................',
-]
 
-IDLE1 = [
-    r'....DDDDD.......',
-    r'...DOOOOOD......',
-    r'..DOOOOOODD.....',
-    r'.DOOOWBOOOOD....',
-    r'.DOOOWBOOODD....',
-    r'.DOOOOCPOOOOD...',
-    r'..DOOOOOOOD.....',
-    r'...DOOOOOD......',
-    r'....DOOOD.......',
-    r'...DOOOOOOD.....',
-    r'..DOOOOOOOOOD...',
-    r'.DOO......OOOD..',
-    r'.DD........DDD..',
-    r'................',
-    r'................',
-    r'................',
-]
+def squish_legs(base, scale_h=0.5):
+    """Compress bottom 20px vertically (sitting pose)."""
+    out      = base.copy()
+    legs_y   = FRAME_H - 20
+    legs     = base.crop((0, legs_y, FRAME_W, FRAME_H))
+    new_h    = max(1, int(20 * scale_h))
+    legs_sm  = legs.resize((FRAME_W, new_h), Image.NEAREST)
+    draw     = ImageDraw.Draw(out)
+    draw.rectangle([0, legs_y, FRAME_W - 1, FRAME_H - 1], fill=(0, 0, 0, 0))
+    paste_y  = FRAME_H - new_h
+    out.paste(legs_sm, (0, paste_y))
+    return out
 
-IDLE2 = [
-    r'......DDDDD.....',
-    r'.....DOOOOOD....',
-    r'....DOOOOOODD...',
-    r'...DOOOWBOOOOD..',
-    r'...DOOOWBOOODD..',
-    r'...DOOOOCPOOOOD.',
-    r'....DOOOOOOOD...',
-    r'.....DOOOOOD....',
-    r'......DOOOD.....',
-    r'.....DOOOOOOD...',
-    r'....DOOOOOOOOOD.',
-    r'...DOO......OOOD',
-    r'...DD........DDD',
-    r'................',
-    r'................',
-    r'................',
-]
 
-SIT1 = [
-    r'....DDDDD.......',
-    r'...DOOOOOD......',
-    r'..DOOOOOODD.....',
-    r'.DOOOWBOOOOD....',
-    r'.DOOOWBOOODD....',
-    r'.DOOOOCPOOOOD...',
-    r'..DOOOOOOOD.....',
-    r'..DOOOOOOOD.....',
-    r'.DDOOOOOOODD....',
-    r'.DOOOOOOOOOD....',
-    r'.DOOOOOOOOOD....',
-    r'.DOOOOOOOOOD....',
-    r'.DDDDDDDDDDD....',
-    r'................',
-    r'................',
-    r'................',
-]
+def sleeping(base):
+    """Rotate 90° CW, fit into 64×64."""
+    rot = base.rotate(-90, expand=False)
+    return rot
 
-SIT2 = [
-    r'....DDDDD.......',
-    r'...DOOOOOD......',
-    r'..DOOOOOODD.....',
-    r'.DOOOWBOOOD.....',
-    r'.DOOOWBOODD.....',
-    r'.DOOOOCPOOOD....',
-    r'..DOOOOOOOD.....',
-    r'..DOOOOOOOD.....',
-    r'.DDOOOOOOODD....',
-    r'.DOOOOOOOOOOD...',
-    r'.DOOOOOOOOOOD...',
-    r'.DOOOOOOOOOOD...',
-    r'.DDDDDDDDDDDD...',
-    r'................',
-    r'................',
-    r'................',
-]
 
-SLEEP1 = [
-    r'................',
-    r'................',
-    r'................',
-    r'....DDDDD.......',
-    r'...DOOOOOD......',
-    r'..DOOOOOOOOD....',
-    r'.DOOOOOOOOOOD...',
-    r'.DOOOOOOOOODD...',
-    r'.DOOOOOOOOOOD...',
-    r'.DDDDDDDDDDD....',
-    r'..DDDDDDDDD.....',
-    r'..DO....DOOD....',
-    r'..DO....DOOD....',
-    r'..DDDDDDDDD.....',
-    r'................',
-    r'................',
-]
+def add_zzz(img):
+    """Draw white 'z' pixels top-right."""
+    out  = img.copy()
+    draw = ImageDraw.Draw(out)
+    # small z dots: top-right corner
+    for dot in [(56, 4), (58, 6), (54, 8)]:
+        draw.point(dot, fill=(255, 255, 255, 220))
+    return out
 
-SLEEP2 = [
-    r'.....D.....D....',
-    r'....D.D...D.D...',
-    r'...D...D.D...D..',
-    r'....DDDDD.......',
-    r'...DOOOOOD......',
-    r'..DOOOOOOOOD....',
-    r'.DOOOOOOOOOOD...',
-    r'.DOOOOOOOOODD...',
-    r'.DOOOOOOOOOOD...',
-    r'.DDDDDDDDDDD....',
-    r'..DDDDDDDDD.....',
-    r'..DO....DOOD....',
-    r'..DO....DOOD....',
-    r'..DDDDDDDDD.....',
-    r'................',
-    r'................',
-]
 
-JUMP1 = [
-    r'....DDDDD.......',
-    r'...DOOOOOD......',
-    r'..DOOOOOODD.....',
-    r'.DOOOWBOOOOD....',
-    r'.DOOOWBOOODD....',
-    r'.DOOOOCPOOOOD...',
-    r'..DOOOOOOOD.....',
-    r'...DOOOOOD......',
-    r'..DOOOOOOOOD....',
-    r'.DOOO....OOOD...',
-    r'.DOO......OOD...',
-    r'.DD........DD...',
-    r'................',
-    r'................',
-    r'................',
-    r'................',
-]
+def brighten_mouth(base, extra_width=0):
+    """Brighten mouth region to simulate barking open mouth."""
+    out  = base.copy()
+    draw = ImageDraw.Draw(out)
+    x1   = 24 - extra_width
+    x2   = 40 + extra_width
+    y1, y2 = 36, 42
+    # semi-transparent pink overlay
+    overlay = Image.new("RGBA", (x2 - x1, y2 - y1), (255, 140, 140, 120))
+    out.paste(overlay, (x1, y1), overlay)
+    return out
 
-JUMP2 = [
-    r'....DDDDD.......',
-    r'...DOOOOOD......',
-    r'..DOOOOOODD.....',
-    r'.DOOOWBOOOOD....',
-    r'.DOOOWBOOODD....',
-    r'.DOOOOCPOOOOD...',
-    r'..DOOOOOOOOD....',
-    r'..DOOOOOOOD.....',
-    r'.DOOOOOOOOOD....',
-    r'DOO......OOOD...',
-    r'DO........OOD...',
-    r'DD........DDD...',
-    r'................',
-    r'................',
-    r'................',
-    r'................',
-]
 
-JUMP3 = [
-    r'....DDDDD.......',
-    r'...DOOOOOD......',
-    r'..DOOOOOODD.....',
-    r'.DOOOWBOOOOD....',
-    r'.DOOOWBOOODD....',
-    r'.DOOOOCPOOOOD...',
-    r'..DOOOOOOOD.....',
-    r'...DOOOOOD......',
-    r'....DOOOD.......',
-    r'...DOOOOOOD.....',
-    r'..DOOOOOOOOOD...',
-    r'.DOO......OOOD..',
-    r'.DD........DDD..',
-    r'................',
-    r'................',
-    r'................',
-]
+def make_sheet(frames):
+    sheet = Image.new("RGBA", (FRAME_W * len(frames), FRAME_H), (0, 0, 0, 0))
+    for i, f in enumerate(frames):
+        sheet.paste(f, (i * FRAME_W, 0))
+    return sheet
 
-BARK1 = [
-    r'....DDDDD.......',
-    r'...DOOOOOD......',
-    r'..DOOOOOODD.....',
-    r'.DOOOWBOOOOD....',
-    r'.DOOOWBOOODD....',
-    r'.DOOOOPPOOOD....',
-    r'..DOOPPPOOD.....',
-    r'...DOOOOOD......',
-    r'....DOOOD.......',
-    r'...DOOOOOOD.....',
-    r'..DOOOOOOOOOD...',
-    r'.DOO......OOOD..',
-    r'.DD........DDD..',
-    r'................',
-    r'................',
-    r'................',
-]
 
-BARK2 = [
-    r'....DDDDD.......',
-    r'...DOOOOOD......',
-    r'..DOOOOOODD.....',
-    r'.DOOOWBOOOOD....',
-    r'.DOOOWBOOODD....',
-    r'.DOOOOPP.OOD....',
-    r'..DOOOPPPD......',
-    r'...DOOOOOD......',
-    r'....DOOOD.......',
-    r'...DOOOOOOD.....',
-    r'..DOOOOOOOOOD...',
-    r'.DOO......OOOD..',
-    r'.DD........DDD..',
-    r'................',
-    r'................',
-    r'................',
-]
+if __name__ == "__main__":
+    base = load_base()
 
-FRAMES = [
-    WALK1, WALK2, WALK3, WALK4,
-    IDLE1, IDLE2,
-    SIT1,  SIT2,
-    SLEEP1, SLEEP2,
-    JUMP1, JUMP2, JUMP3,
-    BARK1, BARK2,
-]
+    frames = [
+        # WALK 1-4
+        shift_legs(base,  0),
+        shift_legs(base, +2),
+        shift_legs(base,  0),
+        shift_legs(base, -2),
+        # IDLE 1-2
+        base,
+        shift_body(base, dy=-1),
+        # SIT 1-2
+        squish_legs(base, 0.50),
+        squish_legs(base, 0.65),
+        # SLEEP 1-2
+        sleeping(base),
+        add_zzz(sleeping(base)),
+        # JUMP 1-3
+        shift_body(base, dy=-4),
+        shift_body(base, dy=-8),
+        shift_body(base, dy=-4),
+        # BARK 1-2
+        brighten_mouth(base, 0),
+        brighten_mouth(base, 2),
+    ]
 
-FRAME_COUNT = len(FRAMES)
-FRAME_W, FRAME_H = 16, 16
-
-sheet = Image.new("RGBA", (FRAME_W * FRAME_COUNT, FRAME_H), (0, 0, 0, 0))
-for i, frame in enumerate(FRAMES):
-    frame_img = px(frame, pal)
-    sheet.paste(frame_img, (i * FRAME_W, 0))
-
-out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "summer.png")
-sheet.save(out)
-print(f"Saved {out} ({FRAME_COUNT} frames, {FRAME_W * FRAME_COUNT}x{FRAME_H})")
+    sheet = make_sheet(frames)
+    sheet.save(OUT)
+    print(f"Saved {OUT}  ({len(frames)} frames, {sheet.width}×{sheet.height})")
