@@ -4,3 +4,5 @@ __pycache__/
 .env
 settings.json
 claude_usage_cache.json
+projects.json
+usage.json
