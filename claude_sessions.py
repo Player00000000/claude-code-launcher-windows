@@ -318,6 +318,9 @@ def get_claude_usage(settings, billing_day=None):
 
     def _tok_sum(t): return t["in"] + t["out"] + t["cw"] + t["cr"]
 
+    for p in per_project.values():
+        p["tok_sum"] = _tok_sum(p["tokens"])
+
     return {
         "per_project": per_project,
         "total": {

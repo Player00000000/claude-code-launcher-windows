@@ -73,10 +73,11 @@ header {
   display: flex; align-items: center; gap: 12px;
 }
 .project-count {
-  font-family: var(--font-pixel); font-size: 9px;
-  color: var(--text-dim);
-  border: 2px solid var(--border-bright);
-  padding: 4px 8px;
+  font-family: var(--font-pixel); font-size: 11px;
+  color: var(--text);
+  border: 2px solid var(--accent);
+  padding: 5px 10px;
+  letter-spacing: 1px;
 }
 
 /* ── BUTTONS ── */
@@ -514,8 +515,8 @@ main {
 
 /* ── DISK SIZE (Feature 8) ── */
 .disk-size {
-  font-family: var(--font-pixel); font-size: 6px;
-  color: var(--text-dim); opacity: 0.6;
+  font-family: var(--font-pixel); font-size: 9px;
+  color: var(--text-dim); opacity: 0.9;
   margin-left: auto;
 }
 
@@ -577,7 +578,7 @@ main {
   color: var(--text-dim);
   border: 2px solid var(--border-bright);
   box-shadow: none;
-  padding: 6px 10px; font-size: 12px;
+  padding: 6px 12px; font-size: 18px;
 }
 .btn-settings:hover { color: var(--text); border-color: var(--accent); }
 
