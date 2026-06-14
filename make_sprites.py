@@ -14,8 +14,10 @@ FRAME_W, FRAME_H = 64, 64
 
 
 def load_base():
-    """Load Pom_64x64.png — already 64×64 RGBA with transparent background."""
-    return Image.open(SRC).convert("RGBA")
+    """Load Pom_64x64.png — already 64×64 RGBA with transparent background.
+    Flip horizontally so pom faces right (scaleX=1 = walking right)."""
+    img = Image.open(SRC).convert("RGBA")
+    return img.transpose(Image.FLIP_LEFT_RIGHT)
 
 
 def shift_body(base, dy=0, dx=0):
