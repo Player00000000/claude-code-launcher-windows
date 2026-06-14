@@ -65,6 +65,9 @@ if __name__ == "__main__":
         print(f"Using: {os.path.basename(SRC_SHEET)}")
         source = Image.open(SRC_SHEET).convert("RGBA")
         grid_frames = [cut_frame(source, box) for box in GRID]
+        # Walk frames (0-3) face left — flip so pom faces right by default
+        for i in range(4):
+            grid_frames[i] = grid_frames[i].transpose(Image.FLIP_LEFT_RIGHT)
         frames = [grid_frames[i] for i in FRAME_MAP]
     else:
         print(f"Sheet not found, falling back to {os.path.basename(SRC_SINGLE)}")
