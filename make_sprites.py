@@ -7,16 +7,15 @@ import os
 from PIL import Image, ImageDraw
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-SRC        = os.path.join(SCRIPT_DIR, "Pom.png")
+SRC        = os.path.join(SCRIPT_DIR, "Pom_64x64.png")
 OUT        = os.path.join(SCRIPT_DIR, "static", "summer.png")
 
 FRAME_W, FRAME_H = 64, 64
 
 
 def load_base():
-    """Downsample Pom.png to 64×64 RGBA using NEAREST (no anti-alias)."""
-    img = Image.open(SRC).convert("RGBA")
-    return img.resize((FRAME_W, FRAME_H), Image.NEAREST)
+    """Load Pom_64x64.png — already 64×64 RGBA with transparent background."""
+    return Image.open(SRC).convert("RGBA")
 
 
 def shift_body(base, dy=0, dx=0):
