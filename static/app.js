@@ -174,7 +174,7 @@ function applyFilter(query) {
 /* ── LOAD PROJECTS ── */
 function isAnyModalOpen() {
   return ['add-modal','edit-modal','billing-modal','help-modal',
-          'settings-modal','sessions-modal','commit-modal','delete-modal','rename-modal']
+          'settings-modal','sessions-modal','commit-modal','delete-modal','rename-modal','clone-modal']
     .some(id => !document.getElementById(id).classList.contains('hidden'));
 }
 
@@ -703,7 +703,7 @@ document.addEventListener('keydown', e => {
       active.value = ''; filterProjects(''); active.blur();
     }
     ['add-modal','edit-modal','billing-modal','help-modal',
-     'settings-modal','sessions-modal','commit-modal','delete-modal','rename-modal']
+     'settings-modal','sessions-modal','commit-modal','delete-modal','rename-modal','clone-modal']
       .forEach(id => closeModal(id));
     return;
   }
@@ -721,3 +721,80 @@ document.addEventListener('keydown', e => {
     if (cards[idx]) cards[idx].querySelector('[data-action="launch"]')?.click();
   }
 });
+
+/* ── CLONE FROM GITHUB ── */
+function openCloneModal() {
+  document.getElementById('clone-url').value  = '';
+  document.getElementById('clone-name').value = '';
+  document.getElementById('clone-status').textContent = '';
+  document.getElementById('clone-status').style.color = '';
+  document.getElementById('clone-btn').textContent = '⬇ CLONE';
+  document.getElementById('clone-btn').disabled = false;
+  document.getElementById('clone-modal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('clone-url').focus(), 50);
+}
+
+function _deriveRepoName(url) {
+  url = url.trim().replace(/\/$/, '');
+  let name = url.split('/').pop().split(':').pop();
+  if (name.endsWith('.git')) name = name.slice(0, -4);
+  return name;
+}
+
+function onCloneUrlInput(val) {
+  const name = _deriveRepoName(val);
+  if (name) document.getElementById('clone-name').value = name;
+  onCloneNameInput(name);
+}
+
+function onCloneNameInput(name) {
+  const status = document.getElementById('clone-status');
+  const btn    = document.getElementById('clone-btn');
+  const exists = allProjects.some(p => p.name.toLowerCase() === name.toLowerCase());
+  if (!name) {
+    status.textContent = ''; status.style.color = '';
+    btn.textContent = '⬇ CLONE';
+  } else if (exists) {
+    status.textContent = `"${name}" already exists — will PULL instead`;
+    status.style.color = '#ffe66d';
+    btn.textContent = '⇣ PULL';
+  } else {
+    status.textContent = `Will clone as: ${name}`;
+    status.style.color = 'var(--accent)';
+    btn.textContent = '⬇ CLONE';
+  }
+}
+
+async function doClone() {
+  const url  = document.getElementById('clone-url').value.trim();
+  const name = document.getElementById('clone-name').value.trim();
+  if (!url) { showToast('ENTER URL', 'error'); return; }
+
+  const exists = allProjects.some(p => p.name.toLowerCase() === name.toLowerCase());
+  if (exists) {
+    closeModal('clone-modal');
+    showToast('PULLING ' + name.toUpperCase() + '...', '');
+    const r = await window.pywebview.api.git_pull(name);
+    if (r.ok) showToast((r.msg || 'PULLED').toUpperCase(), 'success');
+    else       showToast('ERROR: ' + (r.error || 'Unknown'), 'error');
+    setTimeout(() => loadProjects(true), 600);
+    return;
+  }
+
+  const btn = document.getElementById('clone-btn');
+  btn.textContent = 'CLONING...'; btn.disabled = true;
+  try {
+    const r = await window.pywebview.api.clone_project(url, name);
+    if (r.ok) {
+      closeModal('clone-modal');
+      showToast('CLONED ' + r.name.toUpperCase(), 'success');
+      setTimeout(() => loadProjects(true), 600);
+    } else if (r.error === 'exists') {
+      onCloneNameInput(r.name);
+    } else {
+      showToast('ERROR: ' + (r.error || 'Unknown'), 'error');
+    }
+  } finally {
+    btn.textContent = '⬇ CLONE'; btn.disabled = false;
+  }
+}

@@ -109,6 +109,15 @@ def sq(s):
 _RESERVED = {"CON", "PRN", "AUX", "NUL"} | {f"COM{i}" for i in range(1, 10)} | {f"LPT{i}" for i in range(1, 10)}
 
 
+def _repo_name_from_url(url):
+    """Extract repo name from GitHub URL or gh shorthand (user/repo)."""
+    url = url.strip().rstrip("/")
+    name = url.split("/")[-1].split(":")[-1]
+    if name.endswith(".git"):
+        name = name[:-4]
+    return name
+
+
 def validate_name(name):
     name = name.strip()
     if not name or len(name) > 100:
@@ -709,6 +718,43 @@ class Api:
         fut = concurrent.futures.ThreadPoolExecutor(max_workers=1).submit(_do)
         try:
             return fut.result(timeout=70)
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def clone_project(self, url, custom_name=""):
+        name = custom_name.strip() or _repo_name_from_url(url)
+        err = validate_name(name)
+        if err:
+            return {"ok": False, "error": err}
+        win_path = os.path.join(WIN_BASE, name)
+        if os.path.isdir(win_path):
+            return {"ok": False, "error": "exists", "name": name}
+
+        def _do():
+            try:
+                gh = shutil.which("gh")
+                cmd = [gh, "repo", "clone", url, win_path] if gh else ["git", "clone", url, win_path]
+                r = subprocess.run(
+                    cmd, capture_output=True, text=True,
+                    timeout=120, encoding="utf-8", errors="replace",
+                )
+                if r.returncode != 0:
+                    return {"ok": False, "error": (r.stderr + r.stdout).strip()[:300]}
+                meta = load_meta()
+                meta[name] = {"description": "", "color": "#888899",
+                              "tech": [], "status": "ACTIVE"}
+                save_meta(meta)
+                refresh_now(name)
+                return {"ok": True, "name": name}
+            except subprocess.TimeoutExpired:
+                return {"ok": False, "error": "Timed out (120s)"}
+            except Exception as e:
+                return {"ok": False, "error": str(e)}
+
+        import concurrent.futures
+        fut = concurrent.futures.ThreadPoolExecutor(max_workers=1).submit(_do)
+        try:
+            return fut.result(timeout=125)
         except Exception as e:
             return {"ok": False, "error": str(e)}
 

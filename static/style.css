@@ -573,6 +573,14 @@ main {
 .git-behind { color: #ff6b6b; margin-left: 1px; }
 
 /* ── SETTINGS BUTTON ── */
+.btn-clone {
+  background: transparent;
+  color: var(--accent);
+  border: 2px solid var(--accent);
+  box-shadow: none;
+  padding: 6px 10px; font-size: 14px;
+}
+.btn-clone:hover { filter: brightness(1.3); }
 .btn-settings {
   background: transparent;
   color: var(--text-dim);
