@@ -1,8 +1,8 @@
 /* Summer the pomeranian — pixel-art mascot */
 (function () {
-  // Frame layout in summer.png (16px × 16px per frame, 15 frames, rendered at 48px)
-  const W = 16, H = 16, SCALE = 3;
-  const PX = W * SCALE;   // 48
+  // Frame layout in summer.png (64px × 64px per frame, 15 frames, rendered at 64px)
+  const W = 64, H = 64, SCALE = 1;
+  const PX = W * SCALE;   // 64
   const FRAMES = {
     walk:    [0, 1, 2, 3],
     idle:    [4, 5],
