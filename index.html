@@ -285,6 +285,21 @@
         </label>
       </div>
       <div class="field-group">
+        <label>DESKTOP ICON</label>
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:8px">
+          <label class="theme-option"><input type="radio" name="desktop-icon" value="icon0" checked> <span>Original</span></label>
+          <label class="theme-option"><input type="radio" name="desktop-icon" value="icon1"> <span>PixelArt</span></label>
+          <label class="theme-option"><input type="radio" name="desktop-icon" value="icon2"> <span>Gold</span></label>
+        </div>
+        <button class="btn-pixel btn-confirm" onclick="createDesktopIcon()" style="padding:6px 14px;font-size:0.85em">&#x1F4E5; CREATE DESKTOP ICON</button>
+      </div>
+      <div class="field-group">
+        <label>LAUNCHER PROJECT</label>
+        <button class="btn-pixel btn-launch" onclick="openSelf()" title="Open launcher project in Claude Code" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;font-size:0.85em">
+          <span style="font-size:1.1em">&#x1F680;</span> OPEN IN CLAUDE
+        </button>
+      </div>
+      <div class="field-group">
         <label>MAINTENANCE</label>
         <div style="display:flex;align-items:center;gap:12px">
           <span id="orphan-count-label" style="opacity:0.7;font-size:0.85em">Loading...</span>

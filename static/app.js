@@ -555,6 +555,20 @@ async function openSettingsModal() {
   } catch(e) {}
 }
 
+async function createDesktopIcon() {
+  const sel = document.querySelector('input[name="desktop-icon"]:checked');
+  const iconName = sel ? sel.value : 'icon0';
+  const r = await window.pywebview.api.create_desktop_shortcut(iconName);
+  if (r.ok) showToast('DESKTOP ICON CREATED', 'success');
+  else showToast('ERROR: ' + (r.error || 'Unknown'), 'error');
+}
+
+async function openSelf() {
+  const r = await window.pywebview.api.open_self();
+  if (r.ok) showToast('OPENING LAUNCHER PROJECT…', 'success');
+  else showToast('ERROR: ' + (r.error || 'Unknown'), 'error');
+}
+
 async function doPruneMeta() {
   const r = await window.pywebview.api.prune_meta();
   if (r.ok) {

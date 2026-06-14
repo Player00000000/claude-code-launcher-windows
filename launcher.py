@@ -879,6 +879,53 @@ class Api:
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
+    def create_desktop_shortcut(self, icon_name="icon0"):
+        """Create a desktop shortcut for the launcher with the selected icon."""
+        try:
+            allowed = {"icon0", "icon1", "icon2"}
+            if icon_name not in allowed:
+                icon_name = "icon0"
+            icon_path   = os.path.join(SCRIPT_DIR, f"{icon_name}.ico").replace("/", "\\")
+            vbs_path    = os.path.join(SCRIPT_DIR, "start_silent.vbs").replace("/", "\\")
+            lnk_name    = "Claude Code Launcher.lnk"
+            ps_script = (
+                f'$s = (New-Object -ComObject WScript.Shell).CreateShortcut('
+                f'[System.IO.Path]::Combine([System.Environment]::GetFolderPath("Desktop"), "{lnk_name}"));'
+                f'$s.TargetPath = "wscript.exe";'
+                f'$s.Arguments = \'"{vbs_path}"\';'
+                f'$s.IconLocation = "{icon_path}";'
+                f'$s.Description = "Claude Code Launcher";'
+                f'$s.WorkingDirectory = "{SCRIPT_DIR.replace("/", chr(92))}";'
+                f'$s.Save()'
+            )
+            r = subprocess.run(
+                ["powershell", "-NoProfile", "-Command", ps_script],
+                capture_output=True, text=True, timeout=10,
+                encoding="utf-8", errors="replace",
+            )
+            if r.returncode != 0:
+                return {"ok": False, "error": (r.stderr + r.stdout).strip()[:300]}
+            return {"ok": True}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def open_self(self):
+        """Open the launcher project itself in Claude Code."""
+        try:
+            import pathlib
+            wp    = pathlib.PureWindowsPath(SCRIPT_DIR)
+            drive = wp.drive.lower().rstrip(":")
+            rest  = "/".join(p for p in wp.parts[1:])
+            wsl_path = f"/mnt/{drive}/{rest}"
+            cmd = f"cd {sq(wsl_path)} && claude"
+            subprocess.Popen(
+                ["wt.exe", "wsl.exe", "-e", "bash", "-ic", cmd],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            )
+            return {"ok": True}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
     def prune_meta(self):
         try:
             existing = {
