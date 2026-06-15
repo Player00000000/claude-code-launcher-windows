@@ -555,7 +555,7 @@ main {
 .btn-help:hover { background: rgba(124,124,255,0.15); }
 
 /* ── HELP MODAL ── */
-.help-modal-box { max-width: 740px; }
+.help-modal-box { max-width: 740px; max-height: calc(100vh - 40px); overflow-y: auto; }
 .help-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
