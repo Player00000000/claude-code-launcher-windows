@@ -882,10 +882,9 @@ class Api:
     def create_desktop_shortcut(self, icon_name="icon0"):
         """Create a desktop shortcut for the launcher with the selected icon."""
         try:
-            allowed = {"icon0", "icon1", "icon2"}
-            if icon_name not in allowed:
-                icon_name = "icon0"
-            icon_path   = os.path.join(SCRIPT_DIR, f"{icon_name}.ico").replace("/", "\\")
+            icon_file_map = {"icon0": "icon.ico", "icon1": "PixelArt.ico", "icon2": "Gold.ico"}
+            icon_file = icon_file_map.get(icon_name, "icon.ico")
+            icon_path   = os.path.join(SCRIPT_DIR, icon_file).replace("/", "\\")
             vbs_path    = os.path.join(SCRIPT_DIR, "start_silent.vbs").replace("/", "\\")
             lnk_name    = "Claude Code Launcher.lnk"
             ps_script = (
