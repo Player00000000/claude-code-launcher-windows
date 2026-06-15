@@ -7,7 +7,6 @@ let currentSettings  = {};
 let sortBy           = 'name';
 let viewMode         = 'grid';
 let pollTimer        = null;
-let cardMinWidth     = 300;
 
 /* ── FORMATTERS ── */
 function fmtTok(n) {
@@ -222,7 +221,6 @@ window.addEventListener('pywebviewready', async () => {
   try {
     currentSettings = await window.pywebview.api.get_settings();
     applyTheme(currentSettings.theme || 'neon');
-    if (currentSettings.card_min_width) setCardWidth(currentSettings.card_min_width);
     if (currentSettings.summer) initSummer();
   } catch(e) {}
   loadProjects(true);
@@ -238,13 +236,6 @@ function startPollTimer() {
 
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme || 'neon');
-}
-
-function setCardWidth(val) {
-  cardMinWidth = parseInt(val) || 300;
-  document.documentElement.style.setProperty('--card-min-width', cardMinWidth + 'px');
-  const slider = document.getElementById('card-width-slider');
-  if (slider) slider.value = cardMinWidth;
 }
 
 /* ── SEARCH ── */
@@ -602,10 +593,10 @@ async function saveSettingsModal() {
   const theme             = document.querySelector('input[name="theme"]:checked')?.value || 'neon';
 
   const data = await window.pywebview.api.api_save_settings({
-    win_base, wsl_distro, poll_interval_sec, scan_interval_sec, summer, theme, card_min_width: cardMinWidth,
+    win_base, wsl_distro, poll_interval_sec, scan_interval_sec, summer, theme,
   });
   if (data.ok) {
-    currentSettings = { ...currentSettings, win_base, wsl_distro, poll_interval_sec, scan_interval_sec, summer, theme, card_min_width: cardMinWidth };
+    currentSettings = { ...currentSettings, win_base, wsl_distro, poll_interval_sec, scan_interval_sec, summer, theme };
     applyTheme(theme);
     startPollTimer();
     if (summer) initSummer(); else hideSummer();
