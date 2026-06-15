@@ -33,6 +33,9 @@
         <span class="project-count" id="project-count">— PROJECTS</span>
         <button class="btn-pixel btn-view-toggle" id="view-toggle"
                 onclick="toggleView()" title="Switch to list view">☰</button>
+        <input class="card-width-slider" id="card-width-slider"
+               type="range" min="200" max="450" step="10" value="300"
+               title="Card width" oninput="setCardWidth(this.value)">
         <button class="btn-pixel btn-archive-toggle" id="archive-toggle"
                 onclick="toggleArchivedView()" title="Show archived projects">⊘</button>
 <button class="btn-pixel btn-clone" onclick="openCloneModal()" title="Clone from GitHub">⬇</button>

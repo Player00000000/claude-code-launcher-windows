@@ -14,6 +14,7 @@
   --pixel: 3px;
   --font-pixel: 'Press Start 2P', monospace;
   --font-vt: 'VT323', monospace;
+  --card-min-width: 300px;
 }
 
 html { font-size: 16px; }
@@ -129,7 +130,7 @@ main {
 }
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(var(--card-min-width, 300px), 1fr));
   gap: 20px;
 }
 
@@ -309,6 +310,25 @@ main {
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--border-bright); }
 ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+/* ── CARD WIDTH SLIDER ── */
+.card-width-slider {
+  -webkit-appearance: none;
+  width: 70px; height: 14px;
+  background: var(--bg3);
+  border: 2px solid var(--border-bright);
+  outline: none; cursor: ew-resize;
+  align-self: center;
+}
+.card-width-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 10px; height: 14px;
+  background: var(--accent);
+  cursor: ew-resize;
+}
+.card-width-slider:hover {
+  border-color: var(--accent);
+}
 
 /* ── RESPONSIVE ── */
 @media (max-width: 640px) {
