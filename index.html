@@ -24,6 +24,7 @@
              autocomplete="off" spellcheck="false">
       <div class="header-meta">
         <div id="credit-widget" class="credit-widget"></div>
+        <span class="header-sep">|</span>
         <select class="sort-select" id="sort-select" onchange="setSortBy(this.value)" title="Sort projects">
           <option value="name">↑ NAME</option>
           <option value="launched">▶ LAUNCHED</option>
@@ -36,11 +37,13 @@
         <input class="card-width-slider" id="card-width-slider"
                type="range" min="200" max="450" step="10" value="300"
                title="Card width" oninput="setCardWidth(this.value)">
+        <span class="header-sep">|</span>
         <button class="btn-pixel btn-archive-toggle" id="archive-toggle"
                 onclick="toggleArchivedView()" title="Show archived projects">⊘</button>
-<button class="btn-pixel btn-clone" onclick="openCloneModal()" title="Clone from GitHub">⬇</button>
-<button class="btn-pixel btn-settings" onclick="openSettingsModal()" title="Settings">⚙</button>
+        <button class="btn-pixel btn-clone" onclick="openCloneModal()" title="Clone from GitHub">⬇</button>
+        <button class="btn-pixel btn-settings" onclick="openSettingsModal()" title="Settings">⚙</button>
         <button class="btn-pixel btn-help" onclick="openHelp()" title="Help  (press ?)">?</button>
+        <span class="header-sep">|</span>
         <button class="btn-pixel btn-add" onclick="openAddModal()">+ NEW</button>
       </div>
     </div>
