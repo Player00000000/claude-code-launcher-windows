@@ -7,6 +7,95 @@ let currentSettings  = {};
 let sortBy           = 'name';
 let viewMode         = 'grid';
 let pollTimer        = null;
+let sidebarFilter    = 'all';
+let wallpaperType    = '';
+let wallpaperDim     = 40;
+
+/* ── WALLPAPER ── */
+const WALLPAPERS = {
+  sunset: 'linear-gradient(155deg,#241436 0%,#7c3f8f 38%,#ff6a88 72%,#ffb15a 100%)',
+  ocean:  'linear-gradient(155deg,#0a2230,#16404d,#2c7a7a)',
+  synth:  'linear-gradient(rgba(0,255,200,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,200,.05) 1px,transparent 1px),linear-gradient(180deg,#160a2e,#3a1c5c)',
+  forest: 'linear-gradient(155deg,#0b3328,#1f6b46,#8fc865)',
+  ember:  'linear-gradient(155deg,#160d22,#3a1f1f,#e08a2b)',
+  slate:  'linear-gradient(155deg,#15171c,#262b34)',
+};
+
+function applyWallpaper() {
+  const layer = document.getElementById('wallpaper-layer');
+  const dim   = document.getElementById('wallpaper-dim');
+  if (!layer || !dim) return;
+  if (wallpaperType === 'custom') {
+    const url = localStorage.getItem('wallpaper_custom_url');
+    if (url) {
+      layer.style.background = `url(${url}) center/cover no-repeat`;
+    } else {
+      layer.style.background = '';
+      dim.style.background = '';
+      return;
+    }
+  } else if (wallpaperType && WALLPAPERS[wallpaperType]) {
+    layer.style.background = WALLPAPERS[wallpaperType];
+    if (wallpaperType === 'synth') {
+      layer.style.backgroundSize = '40px 40px, 40px 40px, 100% 100%';
+    } else {
+      layer.style.backgroundSize = '';
+    }
+  } else {
+    layer.style.background = '';
+    dim.style.background = '';
+    return;
+  }
+  dim.style.background = `rgba(0,0,0,${wallpaperDim / 100})`;
+}
+
+function setWallpaperPreset(wp) {
+  wallpaperType = wp;
+  document.querySelectorAll('.wallpaper-preset').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.wp === wp);
+  });
+  document.querySelector('.wallpaper-upload-label')?.classList.toggle('active', wp === 'custom');
+  applyWallpaper();
+}
+
+function onWallpaperUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    localStorage.setItem('wallpaper_custom_url', e.target.result);
+    const customBtn = document.getElementById('custom-wp-btn');
+    if (customBtn) customBtn.style.display = '';
+    wallpaperType = 'custom';
+    setWallpaperPreset('custom');
+  };
+  reader.readAsDataURL(file);
+}
+
+function onWallpaperDimChange(val) {
+  wallpaperDim = parseInt(val);
+  const dimVal = document.getElementById('wallpaper-dim-val');
+  if (dimVal) dimVal.textContent = val + '%';
+  applyWallpaper();
+}
+
+/* ── SIDEBAR FILTER ── */
+function setStatusFilter(filter) {
+  sidebarFilter = filter;
+  document.querySelectorAll('.sidebar-filter').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.filter === filter);
+  });
+  const titles = { all:'All Projects', active:'Active', wip:'WIP', paused:'Paused', done:'Done', archived:'Archived' };
+  const titleEl = document.getElementById('topbar-title');
+  if (titleEl) titleEl.textContent = titles[filter] || 'All Projects';
+  const needsArchived = filter === 'archived';
+  if (needsArchived !== showArchived) {
+    showArchived = needsArchived;
+    loadProjects(true);
+  } else {
+    applyFilter(document.getElementById('search-bar').value);
+  }
+}
 
 /* ── FORMATTERS ── */
 function fmtTok(n) {
@@ -56,8 +145,16 @@ function applyFilter(query) {
   const q = query.trim().toLowerCase();
 
   let visible = allProjects;
+
+  // Sidebar status filter
+  if (sidebarFilter === 'archived') {
+    visible = visible.filter(p => p.archived);
+  } else if (sidebarFilter !== 'all') {
+    visible = visible.filter(p => p.status.toLowerCase() === sidebarFilter);
+  }
+
   if (q) {
-    visible = allProjects.filter(p =>
+    visible = visible.filter(p =>
       p.name.toLowerCase().includes(q) ||
       p.description.toLowerCase().includes(q) ||
       (p.tech || []).some(t => t.toLowerCase().includes(q))
@@ -65,7 +162,7 @@ function applyFilter(query) {
   }
 
   visible = sortProjects(visible);
-  count.textContent = visible.length + ' PROJECTS';
+  count.textContent = visible.length + ' project' + (visible.length !== 1 ? 's' : '');
 
   if (!visible.length) {
     grid.innerHTML = q
@@ -160,9 +257,9 @@ function applyFilter(query) {
           ${repoBtn}
           ${pullBtn}
         </div>
-        <div style="display:flex;gap:6px;align-items:center">
+        <div class="card-actions-row">
           ${commitBtn}
-          <button class="btn-pixel btn-launch" data-action="launch" style="flex:1">
+          <button class="btn-launch" data-action="launch">
             <span class="btn-label">▶ LAUNCH</span>
           </button>
         </div>
@@ -220,7 +317,15 @@ document.getElementById('project-grid').addEventListener('click', e => {
 window.addEventListener('pywebviewready', async () => {
   try {
     currentSettings = await window.pywebview.api.get_settings();
-    applyTheme(currentSettings.theme || 'neon');
+    applyTheme(currentSettings.theme || 'light');
+    // Restore wallpaper
+    wallpaperType = currentSettings.wallpaper || '';
+    wallpaperDim  = currentSettings.wallpaper_dim != null ? currentSettings.wallpaper_dim : 40;
+    // Restore custom wallpaper from localStorage
+    if (!wallpaperType && localStorage.getItem('wallpaper_custom_url')) {
+      wallpaperType = 'custom';
+    }
+    applyWallpaper();
     if (currentSettings.summer) initSummer();
   } catch(e) {}
   loadProjects(true);
@@ -235,7 +340,9 @@ function startPollTimer() {
 }
 
 function applyTheme(theme) {
-  document.documentElement.setAttribute('data-theme', theme || 'neon');
+  // Map legacy theme names to new light/dark system
+  if (!theme || theme === 'neon' || theme === 'gameboy' || theme === 'amber') theme = 'light';
+  document.documentElement.setAttribute('data-theme', theme);
 }
 
 /* ── SEARCH ── */
@@ -251,13 +358,9 @@ function toggleView() {
   btn.title = viewMode === 'list' ? 'Switch to grid view' : 'Switch to list view';
 }
 
-/* ── ARCHIVE TOGGLE ── */
+/* ── ARCHIVE TOGGLE (legacy — use setStatusFilter('archived') instead) ── */
 function toggleArchivedView() {
-  showArchived = !showArchived;
-  const btn = document.getElementById('archive-toggle');
-  btn.classList.toggle('active', showArchived);
-  btn.title = showArchived ? 'Hide archived' : 'Show archived';
-  loadProjects(true);
+  setStatusFilter(showArchived ? 'all' : 'archived');
 }
 
 /* ── PIN (Feature 1) ── */
@@ -540,11 +643,30 @@ async function openSettingsModal() {
   document.getElementById('settings-poll').value        = s.poll_interval_sec || 5;
   document.getElementById('settings-scan').value        = s.scan_interval_sec || 60;
   document.getElementById('settings-summer').checked    = !!s.summer;
-  const theme = s.theme || 'neon';
+
+  // Theme (light/dark)
+  let theme = s.theme || 'light';
+  if (theme === 'neon' || theme === 'gameboy' || theme === 'amber') theme = 'light';
   document.querySelectorAll('input[name="theme"]').forEach(r => { r.checked = r.value === theme; });
+
+  // Wallpaper presets
+  const wp  = wallpaperType;
+  document.querySelectorAll('.wallpaper-preset').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.wp === wp);
+  });
+  const customBtn = document.getElementById('custom-wp-btn');
+  if (customBtn) customBtn.style.display = localStorage.getItem('wallpaper_custom_url') ? '' : 'none';
+  document.querySelector('.wallpaper-upload-label')?.classList.toggle('active', wp === 'custom');
+
+  // Wallpaper dim
+  const dim = wallpaperDim;
+  const slider = document.getElementById('wallpaper-dim-slider');
+  const dimVal = document.getElementById('wallpaper-dim-val');
+  if (slider) slider.value = dim;
+  if (dimVal) dimVal.textContent = dim + '%';
+
   document.getElementById('settings-modal').classList.remove('hidden');
   setTimeout(() => document.getElementById('settings-win-base').focus(), 50);
-  // Load orphan count async
   try {
     const r = await window.pywebview.api.get_orphan_count();
     const n = (r && r.count) || 0;
@@ -590,13 +712,16 @@ async function saveSettingsModal() {
   const poll_interval_sec = parseInt(document.getElementById('settings-poll').value) || 5;
   const scan_interval_sec = parseInt(document.getElementById('settings-scan').value) || 60;
   const summer            = document.getElementById('settings-summer').checked;
-  const theme             = document.querySelector('input[name="theme"]:checked')?.value || 'neon';
+  const theme             = document.querySelector('input[name="theme"]:checked')?.value || 'light';
+  const wallpaper         = wallpaperType !== 'custom' ? wallpaperType : '';
+  const wallpaper_dim     = wallpaperDim;
 
   const data = await window.pywebview.api.api_save_settings({
     win_base, wsl_distro, poll_interval_sec, scan_interval_sec, summer, theme,
+    wallpaper, wallpaper_dim,
   });
   if (data.ok) {
-    currentSettings = { ...currentSettings, win_base, wsl_distro, poll_interval_sec, scan_interval_sec, summer, theme };
+    currentSettings = { ...currentSettings, win_base, wsl_distro, poll_interval_sec, scan_interval_sec, summer, theme, wallpaper, wallpaper_dim };
     applyTheme(theme);
     startPollTimer();
     if (summer) initSummer(); else hideSummer();
