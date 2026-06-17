@@ -737,6 +737,37 @@ async function saveSettingsModal() {
 function initSummer()  { if (window.summer) window.summer.init(); }
 function hideSummer()  { if (window.summer) window.summer.hide(); }
 
+/* ── DESCRIPTION HOVER TOOLTIP ── */
+(function initDescTooltip() {
+  const tip = document.getElementById('desc-tooltip');
+  if (!tip) return;
+  const grid = document.getElementById('project-grid');
+  if (!grid) return;
+
+  grid.addEventListener('mouseover', e => {
+    const desc = e.target.closest('.card-desc');
+    if (!desc) return;
+    const text = desc.textContent.trim();
+    if (!text) return;
+    tip.textContent = text;
+    tip.classList.remove('hidden');
+  });
+  grid.addEventListener('mousemove', e => {
+    const desc = e.target.closest('.card-desc');
+    if (!desc) { tip.classList.add('hidden'); return; }
+    let x = e.clientX + 16, y = e.clientY - 10;
+    tip.style.left = x + 'px';
+    tip.style.top  = y + 'px';
+    const r = tip.getBoundingClientRect();
+    if (r.right  > window.innerWidth  - 8) tip.style.left = (e.clientX - r.width - 16) + 'px';
+    if (r.bottom > window.innerHeight - 8) tip.style.top  = (e.clientY - r.height - 10) + 'px';
+  });
+  grid.addEventListener('mouseout', e => {
+    const desc = e.target.closest('.card-desc');
+    if (desc && !desc.contains(e.relatedTarget)) tip.classList.add('hidden');
+  });
+}());
+
 async function resumeProject(name, wslPath) {
   const r = await window.pywebview.api.resume_project(name, wslPath, '');
   if (r.ok) {
