@@ -49,10 +49,8 @@ SETTINGS_FILE = os.path.join(SCRIPT_DIR, "settings.json")
 EXCLUDE       = {"launcher", ".git", "__pycache__"}
 SKIP_DIRS     = {".git", "node_modules", "__pycache__", ".next", "venv", ".venv", ".mypy_cache", "dist", "build"}
 
-# Default projects folder = parent directory of this script
-_DEFAULT_WIN_BASE = os.path.dirname(SCRIPT_DIR)
-
 # Defaults — overridden at startup from settings.json
+_DEFAULT_WIN_BASE = os.path.dirname(SCRIPT_DIR)
 WIN_BASE   = _DEFAULT_WIN_BASE
 WSL_BASE   = "/mnt/d/Claude Code"
 
@@ -902,6 +900,56 @@ class Api:
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
+    def create_desktop_shortcut(self, icon_name="icon0"):
+        """Create a desktop shortcut for the launcher with the selected icon."""
+        try:
+            icon_file_map = {"icon0": "icon.ico", "icon1": "PixelArt.ico", "icon2": "Gold.ico"}
+            icon_file = icon_file_map.get(icon_name, "icon.ico")
+            icon_path   = os.path.join(SCRIPT_DIR, icon_file).replace("/", "\\")
+            vbs_path    = os.path.join(SCRIPT_DIR, "start_silent.vbs").replace("/", "\\")
+            lnk_name    = "Claude Code Launcher.lnk"
+            ps_script = (
+                f'$s = (New-Object -ComObject WScript.Shell).CreateShortcut('
+                f'[System.IO.Path]::Combine([System.Environment]::GetFolderPath("Desktop"), "{lnk_name}"));'
+                f'$s.TargetPath = "wscript.exe";'
+                f'$s.Arguments = \'"{vbs_path}"\';'
+                f'$s.IconLocation = "{icon_path}";'
+                f'$s.Description = "Claude Code Launcher";'
+                f'$s.WorkingDirectory = "{SCRIPT_DIR.replace("/", chr(92))}";'
+                f'$s.Save()'
+            )
+            r = subprocess.run(
+                ["powershell", "-NoProfile", "-Command", ps_script],
+                capture_output=True, text=True, timeout=10,
+                encoding="utf-8", errors="replace",
+            )
+            if r.returncode != 0:
+                return {"ok": False, "error": (r.stderr + r.stdout).strip()[:300]}
+            return {"ok": True}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def open_self(self):
+        """Open the launcher project itself in Claude Code."""
+        try:
+            wt = shutil.which("wt.exe") or shutil.which("wt")
+            if wt:
+                subprocess.Popen(
+                    [wt, "cmd.exe", "/k", "claude"],
+                    cwd=SCRIPT_DIR,
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                )
+            else:
+                subprocess.Popen(
+                    ["cmd.exe", "/k", "claude"],
+                    cwd=SCRIPT_DIR,
+                    creationflags=subprocess.CREATE_NEW_CONSOLE,
+                    close_fds=True,
+                )
+            return {"ok": True}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
     def prune_meta(self):
         try:
             existing = {
@@ -967,33 +1015,6 @@ class Api:
             usage = load_usage()
             usage["billing_start_day"] = day
             save_usage(usage)
-            return {"ok": True}
-        except Exception as e:
-            return {"ok": False, "error": str(e)}
-
-    def create_desktop_shortcut(self):
-        try:
-            desktop   = os.path.join(os.environ.get("USERPROFILE", ""), "Desktop")
-            vbs_path  = os.path.join(SCRIPT_DIR, "start_silent.vbs")
-            lnk_path  = os.path.join(desktop, "Claude Code Launcher.lnk")
-            icon_path = os.path.join(SCRIPT_DIR, "icon.ico")
-            ps_cmd = (
-                f'$s=$([System.Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory());'
-                f'$WshShell=New-Object -ComObject WScript.Shell;'
-                f'$lnk=$WshShell.CreateShortcut("{lnk_path}");'
-                f'$lnk.TargetPath="wscript.exe";'
-                f'$lnk.Arguments=\'"{vbs_path}"\';'
-                f'$lnk.WorkingDirectory="{SCRIPT_DIR}";'
-                f'$lnk.IconLocation="{icon_path}";'
-                f'$lnk.Description="Claude Code Launcher";'
-                f'$lnk.Save()'
-            )
-            r = subprocess.run(
-                ["powershell", "-NoProfile", "-Command", ps_cmd],
-                capture_output=True, timeout=10,
-            )
-            if r.returncode != 0:
-                return {"ok": False, "error": r.stderr.strip()[:200]}
             return {"ok": True}
         except Exception as e:
             return {"ok": False, "error": str(e)}

@@ -1,57 +1,115 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CLAUDE CODE LAUNCHER</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&family=VT323:wght@400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="static/style.css">
 </head>
 <body>
-  <div class="scanlines"></div>
-  <div class="crt-overlay"></div>
 
-  <header>
-    <div class="header-inner">
-      <div class="logo">
-        <span class="logo-icon">▶</span>
-        <span class="logo-text">CLAUDE CODE</span>
-        <span class="cursor blink">█</span>
-      </div>
-      <input class="search-bar" id="search-bar" type="text"
-             placeholder="/ SEARCH..." oninput="filterProjects(this.value)"
-             autocomplete="off" spellcheck="false">
-      <div class="header-meta">
-        <div id="credit-widget" class="credit-widget"></div>
-        <select class="sort-select" id="sort-select" onchange="setSortBy(this.value)" title="Sort projects">
-          <option value="name">↑ NAME</option>
-          <option value="launched">▶ LAUNCHED</option>
-          <option value="modified">⏱ MODIFIED</option>
-          <option value="status">◈ STATUS</option>
-        </select>
-        <span class="project-count" id="project-count">— PROJECTS</span>
-        <button class="btn-pixel btn-view-toggle" id="view-toggle"
-                onclick="toggleView()" title="Switch to list view">☰</button>
-        <button class="btn-pixel btn-archive-toggle" id="archive-toggle"
-                onclick="toggleArchivedView()" title="Show archived projects">⊘</button>
-<button class="btn-pixel btn-clone" onclick="openCloneModal()" title="Clone from GitHub">⬇</button>
-<button class="btn-pixel btn-settings" onclick="openSettingsModal()" title="Settings">⚙</button>
-        <button class="btn-pixel btn-help" onclick="openHelp()" title="Help  (press ?)">?</button>
-        <button class="btn-pixel btn-add" onclick="openAddModal()">+ NEW</button>
-      </div>
-    </div>
-  </header>
+  <!-- Wallpaper layers -->
+  <div id="wallpaper-layer"></div>
+  <div id="wallpaper-dim"></div>
 
-  <main>
-    <div class="grid" id="project-grid">
-      <div class="loading-msg">LOADING PROJECTS<span class="blink">█</span></div>
-    </div>
-  </main>
+  <!-- App shell -->
+  <div id="app">
+
+    <!-- SIDEBAR -->
+    <aside id="sidebar">
+      <div class="sidebar-inner">
+
+        <!-- Logo -->
+        <div class="sidebar-logo">
+          <span class="logo-icon">▶</span>
+          <span class="logo-text">LAUNCHER</span>
+          <span class="cursor blink">█</span>
+        </div>
+
+        <!-- Status Filters -->
+        <div class="sidebar-section-label">FILTERS</div>
+        <nav class="sidebar-filters">
+          <button class="sidebar-filter active" data-filter="all" onclick="setStatusFilter('all')">
+            <span class="filter-icon">◧</span>
+            <span class="filter-label">All Projects</span>
+          </button>
+          <button class="sidebar-filter" data-filter="active" onclick="setStatusFilter('active')">
+            <span class="filter-icon" style="color:var(--st-active)">●</span>
+            <span class="filter-label">Active</span>
+          </button>
+          <button class="sidebar-filter" data-filter="wip" onclick="setStatusFilter('wip')">
+            <span class="filter-icon" style="color:var(--st-wip)">●</span>
+            <span class="filter-label">WIP</span>
+          </button>
+          <button class="sidebar-filter" data-filter="paused" onclick="setStatusFilter('paused')">
+            <span class="filter-icon" style="color:var(--st-paused)">●</span>
+            <span class="filter-label">Paused</span>
+          </button>
+          <button class="sidebar-filter" data-filter="done" onclick="setStatusFilter('done')">
+            <span class="filter-icon" style="color:var(--st-done)">●</span>
+            <span class="filter-label">Done</span>
+          </button>
+          <button class="sidebar-filter" data-filter="archived" onclick="setStatusFilter('archived')">
+            <span class="filter-icon">⊘</span>
+            <span class="filter-label">Archived</span>
+          </button>
+        </nav>
+
+        <!-- Billing Widget -->
+        <div class="sidebar-billing">
+          <div class="sidebar-billing-label">BILLING</div>
+          <div id="credit-widget" class="credit-widget"></div>
+        </div>
+
+        <!-- Bottom Buttons -->
+        <div class="sidebar-bottom">
+          <button class="sidebar-btn" onclick="openSettingsModal()" title="Settings">⚙ Settings</button>
+          <button class="sidebar-btn" onclick="openHelp()" title="Help (press ?)">? Help</button>
+          <button class="sidebar-btn" onclick="openCloneModal()" title="Clone from GitHub">⬇ Clone</button>
+        </div>
+
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main id="main">
+
+      <!-- Topbar -->
+      <div id="topbar">
+        <div class="topbar-left">
+          <span class="topbar-filter-title" id="topbar-title">All Projects</span>
+          <span class="topbar-count" id="project-count">— projects</span>
+        </div>
+        <div class="topbar-right">
+          <input class="search-bar" id="search-bar" type="text"
+                 placeholder="/ search..." oninput="filterProjects(this.value)"
+                 autocomplete="off" spellcheck="false">
+          <select class="sort-select" id="sort-select" onchange="setSortBy(this.value)" title="Sort projects">
+            <option value="name">↑ NAME</option>
+            <option value="launched">▶ LAUNCHED</option>
+            <option value="modified">⏱ MODIFIED</option>
+            <option value="status">◈ STATUS</option>
+          </select>
+          <button class="btn-view" id="view-toggle" onclick="toggleView()" title="Switch to list view">☰</button>
+          <button class="btn-new" onclick="openAddModal()">+ NEW</button>
+        </div>
+      </div>
+
+      <!-- Project Grid -->
+      <div class="main-content">
+        <div class="grid" id="project-grid">
+          <div class="loading-msg">LOADING PROJECTS<span class="blink">█</span></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
 
   <div id="toast" class="toast hidden"></div>
 
-  <!-- ADD MODAL -->
+  <!-- ── ADD MODAL ── -->
   <div id="add-modal" class="modal hidden" onclick="closeOnBackdrop(event,'add-modal')">
     <div class="modal-box">
       <div class="modal-title">+ NEW PROJECT</div>
@@ -104,7 +162,7 @@
     </div>
   </div>
 
-  <!-- EDIT MODAL -->
+  <!-- ── EDIT MODAL ── -->
   <div id="edit-modal" class="modal hidden" onclick="closeOnBackdrop(event,'edit-modal')">
     <div class="modal-box modal-box-wide">
       <div class="modal-title">✎ EDIT PROJECT</div>
@@ -168,7 +226,7 @@
     </div>
   </div>
 
-  <!-- BILLING DAY MODAL -->
+  <!-- ── BILLING DAY MODAL ── -->
   <div id="billing-modal" class="modal hidden" onclick="closeOnBackdrop(event,'billing-modal')">
     <div class="modal-box" style="max-width:340px">
       <div class="modal-title">⚡ BILLING RESET DATE</div>
@@ -184,7 +242,7 @@
     </div>
   </div>
 
-  <!-- HELP MODAL -->
+  <!-- ── HELP MODAL ── -->
   <div id="help-modal" class="modal hidden" onclick="closeOnBackdrop(event,'help-modal')">
     <div class="modal-box modal-box-wide help-modal-box">
       <div class="modal-title">? HELP &amp; SHORTCUTS</div>
@@ -209,18 +267,17 @@
         </div>
 
         <div class="help-section">
-          <div class="help-section-title">⚡ HEADER</div>
-          <div class="help-row"><span class="help-key">/ SEARCH</span><span class="help-val">Filter cards by name, description, tech</span></div>
-          <div class="help-row"><span class="help-key">⚡ Xd</span><span class="help-val">Days until billing resets — click to change date</span></div>
-          <div class="help-row"><span class="help-key">▶ N</span><span class="help-val">Launches this month (counted automatically)</span></div>
-          <div class="help-row"><span class="help-key">CONSOLE ↗</span><span class="help-val">Open console.anthropic.com in browser</span></div>
-          <div class="help-row"><span class="help-key">⊘</span><span class="help-val">Show / hide archived projects</span></div>
+          <div class="help-section-title">◧ SIDEBAR</div>
+          <div class="help-row"><span class="help-key">All</span><span class="help-val">Show all active projects</span></div>
+          <div class="help-row"><span class="help-key">⊘ Archived</span><span class="help-val">Show archived projects</span></div>
+          <div class="help-row"><span class="help-key">⚡ Xd</span><span class="help-val">Days until billing resets — click to set</span></div>
+          <div class="help-row"><span class="help-key">CONSOLE ↗</span><span class="help-val">Open console.anthropic.com</span></div>
           <div class="help-row"><span class="help-key">+ NEW</span><span class="help-val">Add new project (creates folder on disk)</span></div>
         </div>
 
         <div class="help-section">
           <div class="help-section-title">📌 CARD INFO</div>
-          <div class="help-row"><span class="help-key">⑂ main •3</span><span class="help-val">Git branch + number of uncommitted files</span></div>
+          <div class="help-row"><span class="help-key">⑂ main •3</span><span class="help-val">Git branch + uncommitted files</span></div>
           <div class="help-row"><span class="help-key">⏱ 2d ago</span><span class="help-val">Last file modified in project folder</span></div>
           <div class="help-row"><span class="help-key">▶ launched</span><span class="help-val">Last time you clicked LAUNCH</span></div>
           <div class="help-row"><span class="help-key">ACTIVE</span><span class="help-val">Status badge — set in edit modal</span></div>
@@ -251,7 +308,7 @@
     </div>
   </div>
 
-  <!-- SETTINGS MODAL -->
+  <!-- ── SETTINGS MODAL ── -->
   <div id="settings-modal" class="modal hidden" onclick="closeOnBackdrop(event,'settings-modal')">
     <div class="modal-box modal-box-wide">
       <div class="modal-title">⚙ SETTINGS</div>
@@ -274,10 +331,31 @@
       <div class="field-group">
         <label>THEME</label>
         <div class="theme-options">
-          <label class="theme-option"><input type="radio" name="theme" value="neon"><span>NEON (default)</span></label>
-          <label class="theme-option"><input type="radio" name="theme" value="gameboy"><span>GAMEBOY</span></label>
-          <label class="theme-option"><input type="radio" name="theme" value="amber"><span>AMBER CRT</span></label>
+          <label class="theme-option"><input type="radio" name="theme" value="light"><span>LIGHT (warm amber)</span></label>
+          <label class="theme-option"><input type="radio" name="theme" value="dark"><span>DARK (slate)</span></label>
         </div>
+      </div>
+      <div class="field-group">
+        <label>WALLPAPER</label>
+        <div class="wallpaper-presets">
+          <button class="wallpaper-preset active" data-wp="" onclick="setWallpaperPreset('')">OFF</button>
+          <button class="wallpaper-preset" data-wp="sunset" onclick="setWallpaperPreset('sunset')">SUNSET</button>
+          <button class="wallpaper-preset" data-wp="ocean" onclick="setWallpaperPreset('ocean')">OCEAN</button>
+          <button class="wallpaper-preset" data-wp="synth" onclick="setWallpaperPreset('synth')">SYNTH</button>
+          <button class="wallpaper-preset" data-wp="forest" onclick="setWallpaperPreset('forest')">FOREST</button>
+          <button class="wallpaper-preset" data-wp="ember" onclick="setWallpaperPreset('ember')">EMBER</button>
+          <button class="wallpaper-preset" data-wp="slate" onclick="setWallpaperPreset('slate')">SLATE</button>
+          <button class="wallpaper-preset" data-wp="custom" id="custom-wp-btn" style="display:none" onclick="setWallpaperPreset('custom')">CUSTOM</button>
+        </div>
+        <div style="margin-top:8px">
+          <label class="wallpaper-upload-label" for="wallpaper-upload">📁 UPLOAD IMAGE</label>
+          <input type="file" id="wallpaper-upload" accept="image/*" style="display:none" onchange="onWallpaperUpload(this)">
+        </div>
+      </div>
+      <div class="field-group">
+        <label>WALLPAPER DIM &nbsp;<span id="wallpaper-dim-val" style="font-family:var(--font-vt);font-size:15px;color:var(--text2)">40%</span></label>
+        <input type="range" id="wallpaper-dim-slider" min="0" max="80" value="40"
+               oninput="onWallpaperDimChange(this.value)">
       </div>
       <div class="field-group">
         <label class="theme-option">
@@ -285,13 +363,24 @@
         </label>
       </div>
       <div class="field-group">
-        <label>DESKTOP SHORTCUT</label>
-        <button class="btn-pixel btn-confirm" onclick="createDesktopShortcut()" style="padding:6px 16px;font-size:0.8em">+ CREATE DESKTOP SHORTCUT</button>
+        <label>DESKTOP ICON</label>
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:8px">
+          <label class="theme-option"><input type="radio" name="desktop-icon" value="icon0" checked> <span>Original</span></label>
+          <label class="theme-option"><input type="radio" name="desktop-icon" value="icon1"> <span>PixelArt</span></label>
+          <label class="theme-option"><input type="radio" name="desktop-icon" value="icon2"> <span>Gold</span></label>
+        </div>
+        <button class="btn-pixel btn-confirm" onclick="createDesktopIcon()" style="padding:6px 14px;font-size:0.85em">&#x1F4E5; CREATE DESKTOP ICON</button>
+      </div>
+      <div class="field-group">
+        <label>LAUNCHER PROJECT</label>
+        <button class="btn-pixel btn-confirm" onclick="openSelf()" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;font-size:0.85em">
+          <span style="font-size:1.1em">&#x1F680;</span> OPEN IN CLAUDE
+        </button>
       </div>
       <div class="field-group">
         <label>MAINTENANCE</label>
         <div style="display:flex;align-items:center;gap:12px">
-          <span id="orphan-count-label" style="opacity:0.7;font-size:0.85em">Loading...</span>
+          <span id="orphan-count-label" style="font-family:var(--font-vt);font-size:17px;color:var(--text3)">Loading...</span>
           <button class="btn-pixel btn-cancel" id="prune-btn" onclick="doPruneMeta()" style="padding:4px 12px;font-size:0.8em">PRUNE ORPHANS</button>
         </div>
       </div>
@@ -302,7 +391,7 @@
     </div>
   </div>
 
-  <!-- SESSION HISTORY MODAL -->
+  <!-- ── SESSION HISTORY MODAL ── -->
   <div id="sessions-modal" class="modal hidden" onclick="closeOnBackdrop(event,'sessions-modal')">
     <div class="modal-box modal-box-wide">
       <div class="modal-title" id="sessions-modal-title">SESSION HISTORY</div>
@@ -313,7 +402,7 @@
     </div>
   </div>
 
-  <!-- COMMIT & PUSH MODAL -->
+  <!-- ── COMMIT & PUSH MODAL ── -->
   <div id="commit-modal" class="modal hidden" onclick="closeOnBackdrop(event,'commit-modal')">
     <div class="modal-box modal-box-wide">
       <div class="modal-title">⇧ COMMIT &amp; PUSH</div>
@@ -333,10 +422,10 @@
     </div>
   </div>
 
-  <!-- DELETE CONFIRM MODAL -->
+  <!-- ── DELETE CONFIRM MODAL ── -->
   <div id="delete-modal" class="modal hidden" onclick="closeOnBackdrop(event,'delete-modal')">
     <div class="modal-box" style="max-width:380px">
-      <div class="modal-title" style="color:#ff6b6b">⚠ DELETE PROJECT</div>
+      <div class="modal-title" style="color:var(--danger)">⚠ DELETE PROJECT</div>
       <input type="hidden" id="delete-project-name">
       <p class="modal-hint">This sends the folder to the Recycle Bin. Type the project name to confirm.</p>
       <div class="field-group">
@@ -350,7 +439,7 @@
     </div>
   </div>
 
-  <!-- RENAME MODAL -->
+  <!-- ── RENAME MODAL ── -->
   <div id="rename-modal" class="modal hidden" onclick="closeOnBackdrop(event,'rename-modal')">
     <div class="modal-box" style="max-width:380px">
       <div class="modal-title">✎ RENAME PROJECT</div>
@@ -366,7 +455,7 @@
     </div>
   </div>
 
-  <!-- CLONE MODAL -->
+  <!-- ── CLONE MODAL ── -->
   <div id="clone-modal" class="modal hidden" onclick="closeOnBackdrop(event,'clone-modal')">
     <div class="modal-box" style="max-width:440px">
       <div class="modal-title">⬇ CLONE FROM GITHUB</div>
@@ -380,7 +469,7 @@
         <input type="text" id="clone-name" placeholder="repo-name" maxlength="100"
                oninput="onCloneNameInput(this.value)">
       </div>
-      <div id="clone-status" style="font-family:var(--font-pixel);font-size:9px;min-height:18px;margin-bottom:8px"></div>
+      <div id="clone-status"></div>
       <div class="modal-actions">
         <button class="btn-pixel btn-cancel" onclick="closeModal('clone-modal')">CANCEL</button>
         <button class="btn-pixel btn-confirm" id="clone-btn" onclick="doClone()">⬇ CLONE</button>
@@ -388,10 +477,14 @@
     </div>
   </div>
 
+  <!-- Summer mascot -->
   <div id="summer-zone" style="display:none">
     <div id="summer"></div>
     <div id="summer-bubble"></div>
   </div>
+
+  <!-- Description hover tooltip -->
+  <div id="desc-tooltip" class="hidden"></div>
 
   <script src="static/app.js"></script>
   <script src="static/summer.js"></script>

@@ -74,7 +74,9 @@
 
   function walkToRandom() {
     const margin = 60;
-    const maxX = window.innerWidth - PX - margin;
+    const zone = document.getElementById('summer-zone');
+    const zoneW = (zone && zone.offsetWidth > 0) ? zone.offsetWidth : window.innerWidth;
+    const maxX = zoneW - PX - margin;
     targetX = margin + Math.random() * Math.max(0, maxX - margin);
     dir = targetX > x ? 1 : -1;
     el.style.transform = `scaleX(${dir}) translateX(0px)`;
