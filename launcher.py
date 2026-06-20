@@ -42,12 +42,20 @@ if ctypes.windll.kernel32.GetLastError() == 183:  # ERROR_ALREADY_EXISTS
     )
     sys.exit(0)
 
+# Per-monitor DPI V2 — app re-renders at native resolution when moved between monitors
+try:
+    ctypes.windll.user32.SetProcessDpiAwarenessContext(ctypes.c_void_p(-4))
+except Exception:
+    pass
+
 SCRIPT_DIR    = os.path.dirname(os.path.abspath(__file__))
 META_FILE     = os.path.join(SCRIPT_DIR, "projects.json")
 USAGE_FILE    = os.path.join(SCRIPT_DIR, "usage.json")
 SETTINGS_FILE = os.path.join(SCRIPT_DIR, "settings.json")
 EXCLUDE       = {"launcher", ".git", "__pycache__"}
 SKIP_DIRS     = {".git", "node_modules", "__pycache__", ".next", "venv", ".venv", ".mypy_cache", "dist", "build"}
+
+def _excluded(f): return f in EXCLUDE or f.startswith(('_', '.'))
 
 # Defaults — overridden at startup from settings.json
 WIN_BASE   = r"D:\Claude Code"
@@ -133,6 +141,37 @@ def validate_name(name):
     if not target.startswith(base):
         return "Name resolves outside base dir"
     return None
+
+
+def _scaffold_project(proj_dir, name):
+    """Create CONTEXT.md, DECISIONS.md and register in PROJECT_INDEX.md."""
+    today = datetime.now().strftime("%Y-%m-%d")
+    tmpl_dir = os.path.join(WIN_BASE, "_shared", "templates")
+
+    for fname in ("CONTEXT.md", "DECISIONS.md"):
+        src = os.path.join(tmpl_dir, fname)
+        dst = os.path.join(proj_dir, fname)
+        if os.path.exists(src) and not os.path.exists(dst):
+            with open(src, encoding="utf-8") as f:
+                content = f.read()
+            content = content.replace("[Project Name]", name).replace("[วันที่]", today)
+            with open(dst, "w", encoding="utf-8") as f:
+                f.write(content)
+
+    index_path = os.path.join(WIN_BASE, "PROJECT_INDEX.md")
+    if os.path.exists(index_path):
+        with open(index_path, encoding="utf-8") as f:
+            lines = f.readlines()
+        new_row = f"| **{name}** | 🟡 Draft | TBD | [CONTEXT]({name}/CONTEXT.md) |\n"
+        # Insert before Dormant section
+        for i, line in enumerate(lines):
+            if line.startswith("## 🔴 Dormant"):
+                lines.insert(i, new_row)
+                break
+        else:
+            lines.append(new_row)
+        with open(index_path, "w", encoding="utf-8") as f:
+            f.writelines(lines)
 
 
 def load_meta():
@@ -352,7 +391,7 @@ def _scan_once():
     try:
         folders = [
             f for f in sorted(os.listdir(WIN_BASE))
-            if f not in EXCLUDE and os.path.isdir(os.path.join(WIN_BASE, f))
+            if not _excluded(f) and os.path.isdir(os.path.join(WIN_BASE, f))
         ]
         for folder in folders:
             _refresh_folder(folder)
@@ -387,7 +426,7 @@ def scan_projects(show_archived=False):
     try:
         new_folders = []
         for folder in sorted(os.listdir(WIN_BASE)):
-            if folder in EXCLUDE:
+            if _excluded(folder):
                 continue
             win_path = os.path.join(WIN_BASE, folder)
             if not os.path.isdir(win_path):
@@ -542,7 +581,9 @@ class Api:
         err = validate_name(name)
         if err:
             return {"ok": False, "error": err}
-        os.makedirs(os.path.join(WIN_BASE, name), exist_ok=True)
+        proj_dir = os.path.join(WIN_BASE, name)
+        os.makedirs(proj_dir, exist_ok=True)
+        _scaffold_project(proj_dir, name)
         meta = load_meta()
         meta[name] = {
             "description": description or DEFAULT_DESC,
@@ -929,7 +970,7 @@ class Api:
         try:
             existing = {
                 f for f in os.listdir(WIN_BASE)
-                if f not in EXCLUDE and os.path.isdir(os.path.join(WIN_BASE, f))
+                if not _excluded(f) and os.path.isdir(os.path.join(WIN_BASE, f))
             }
             meta = load_meta()
             orphans = [k for k in meta if k not in existing]
@@ -945,7 +986,7 @@ class Api:
         try:
             existing = {
                 f for f in os.listdir(WIN_BASE)
-                if f not in EXCLUDE and os.path.isdir(os.path.join(WIN_BASE, f))
+                if not _excluded(f) and os.path.isdir(os.path.join(WIN_BASE, f))
             }
             meta = load_meta()
             return {"ok": True, "count": len([k for k in meta if k not in existing])}

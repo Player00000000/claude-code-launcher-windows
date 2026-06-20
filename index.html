@@ -372,12 +372,6 @@
         <button class="btn-pixel btn-confirm" onclick="createDesktopIcon()" style="padding:6px 14px;font-size:0.85em">&#x1F4E5; CREATE DESKTOP ICON</button>
       </div>
       <div class="field-group">
-        <label>LAUNCHER PROJECT</label>
-        <button class="btn-pixel btn-confirm" onclick="openSelf()" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;font-size:0.85em">
-          <span style="font-size:1.1em">&#x1F680;</span> OPEN IN CLAUDE
-        </button>
-      </div>
-      <div class="field-group">
         <label>MAINTENANCE</label>
         <div style="display:flex;align-items:center;gap:12px">
           <span id="orphan-count-label" style="font-family:var(--font-vt);font-size:17px;color:var(--text3)">Loading...</span>
@@ -386,6 +380,9 @@
       </div>
       <div class="modal-actions">
         <button class="btn-pixel btn-cancel" onclick="closeModal('settings-modal')">CANCEL</button>
+        <button class="btn-pixel btn-confirm" onclick="openSelf()" style="display:inline-flex;align-items:center;gap:6px">
+          <span style="font-size:1.1em">&#x1F680;</span> OPEN IN CLAUDE
+        </button>
         <button class="btn-pixel btn-confirm" onclick="saveSettingsModal()">SAVE</button>
       </div>
     </div>
