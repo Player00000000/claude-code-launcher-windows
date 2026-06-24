@@ -433,6 +433,7 @@ function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 function closeOnBackdrop(e, id) { if (e.target.id === id) closeModal(id); }
 function setSwatch(color, inputId) { document.getElementById(inputId).value = color; }
 function openHelp() { document.getElementById('help-modal').classList.remove('hidden'); }
+function openTmuxModal() { document.getElementById('tmux-modal').classList.remove('hidden'); }
 
 /* ── ADD ── */
 function openAddModal() {

@@ -1038,6 +1038,19 @@ input[type="range"] {
   .help-modal-box { max-width: 100%; }
 }
 
+/* ── TMUX MODAL ── */
+.tmux-modal-box { max-width: 860px; }
+.tmux-grid { grid-template-columns: 1fr 1fr 1fr; }
+.tmux-code {
+  font-family: var(--font-vt) !important;
+  font-size: 15px !important;
+  letter-spacing: 0;
+  min-width: 130px !important;
+  text-align: left !important;
+}
+@media (max-width: 800px) { .tmux-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 520px) { .tmux-grid { grid-template-columns: 1fr; } .tmux-modal-box { max-width: 100%; } }
+
 /* ── SESSION HISTORY MODAL ── */
 .session-list {
   display: flex; flex-direction: column; gap: 6px;
