@@ -949,6 +949,17 @@ class Api:
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
+    def open_claude_home(self):
+        """Open Claude Code with no project (home dir)."""
+        try:
+            subprocess.Popen(
+                ["wt.exe", "wsl.exe", "-e", "bash", "-ic", "cd /home/admins && claude"],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            )
+            return {"ok": True}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
     def open_self(self):
         """Open the launcher project itself in Claude Code."""
         try:

@@ -685,6 +685,12 @@ async function createDesktopIcon() {
   else showToast('ERROR: ' + (r.error || 'Unknown'), 'error');
 }
 
+async function openClaudeHome() {
+  const r = await window.pywebview.api.open_claude_home();
+  if (r.ok) showToast('OPENING CLAUDE…', 'success');
+  else showToast('ERROR: ' + (r.error || 'Unknown'), 'error');
+}
+
 async function openSelf() {
   const r = await window.pywebview.api.open_self();
   if (r.ok) showToast('OPENING LAUNCHER PROJECT…', 'success');
