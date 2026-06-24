@@ -37,6 +37,14 @@
   --font-vt: 'VT323', monospace;
 }
 
+/* ── READABLE FONT MODE ── */
+[data-font="readable"] {
+  --font-pixel: 'Segoe UI', system-ui, sans-serif;
+  --font-silk: 'Segoe UI', system-ui, sans-serif;
+  --font-vt: 'Segoe UI', system-ui, sans-serif;
+}
+[data-font="readable"] body { font-size: 15px; }
+
 /* ── DARK THEME TOKENS ── */
 [data-theme="dark"] {
   --bg: #15171c;

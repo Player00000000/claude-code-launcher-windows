@@ -318,6 +318,7 @@ window.addEventListener('pywebviewready', async () => {
   try {
     currentSettings = await window.pywebview.api.get_settings();
     applyTheme(currentSettings.theme || 'light');
+    applyFontMode(currentSettings.font_mode || 'pixel');
     // Restore wallpaper
     wallpaperType = currentSettings.wallpaper || '';
     wallpaperDim  = currentSettings.wallpaper_dim != null ? currentSettings.wallpaper_dim : 40;
@@ -343,6 +344,10 @@ function applyTheme(theme) {
   // Map legacy theme names to new light/dark system
   if (!theme || theme === 'neon' || theme === 'gameboy' || theme === 'amber') theme = 'light';
   document.documentElement.setAttribute('data-theme', theme);
+}
+
+function applyFontMode(mode) {
+  document.documentElement.setAttribute('data-font', mode === 'readable' ? 'readable' : 'pixel');
 }
 
 /* ── SEARCH ── */
@@ -645,6 +650,10 @@ async function openSettingsModal() {
   document.getElementById('settings-scan').value        = s.scan_interval_sec || 60;
   document.getElementById('settings-summer').checked    = !!s.summer;
 
+  // Font mode
+  const fontMode = s.font_mode || 'pixel';
+  document.querySelectorAll('input[name="font-mode"]').forEach(r => { r.checked = r.value === fontMode; });
+
   // Theme (light/dark)
   let theme = s.theme || 'light';
   if (theme === 'neon' || theme === 'gameboy' || theme === 'amber') theme = 'light';
@@ -720,16 +729,18 @@ async function saveSettingsModal() {
   const scan_interval_sec = parseInt(document.getElementById('settings-scan').value) || 60;
   const summer            = document.getElementById('settings-summer').checked;
   const theme             = document.querySelector('input[name="theme"]:checked')?.value || 'light';
+  const font_mode         = document.querySelector('input[name="font-mode"]:checked')?.value || 'pixel';
   const wallpaper         = wallpaperType !== 'custom' ? wallpaperType : '';
   const wallpaper_dim     = wallpaperDim;
 
   const data = await window.pywebview.api.api_save_settings({
-    win_base, wsl_distro, poll_interval_sec, scan_interval_sec, summer, theme,
+    win_base, wsl_distro, poll_interval_sec, scan_interval_sec, summer, theme, font_mode,
     wallpaper, wallpaper_dim,
   });
   if (data.ok) {
-    currentSettings = { ...currentSettings, win_base, wsl_distro, poll_interval_sec, scan_interval_sec, summer, theme, wallpaper, wallpaper_dim };
+    currentSettings = { ...currentSettings, win_base, wsl_distro, poll_interval_sec, scan_interval_sec, summer, theme, font_mode, wallpaper, wallpaper_dim };
     applyTheme(theme);
+    applyFontMode(font_mode);
     startPollTimer();
     if (summer) initSummer(); else hideSummer();
     closeModal('settings-modal');
