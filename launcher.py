@@ -115,6 +115,17 @@ def sq(s):
     return "'" + str(s).replace("'", "'\\''") + "'"
 
 
+def _open_terminal(shell_cmd, cwd):
+    wt = shutil.which("wt") or shutil.which("wt.exe")
+    if wt:
+        subprocess.Popen([wt, "cmd.exe", "/k", shell_cmd], cwd=cwd,
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    else:
+        # ponytail: CREATE_NEW_CONSOLE required — without it cmd.exe is invisible from a GUI process
+        subprocess.Popen(["cmd.exe", "/k", shell_cmd], cwd=cwd,
+                         creationflags=subprocess.CREATE_NEW_CONSOLE)
+
+
 _RESERVED = {"CON", "PRN", "AUX", "NUL"} | {f"COM{i}" for i in range(1, 10)} | {f"LPT{i}" for i in range(1, 10)}
 
 
@@ -516,19 +527,7 @@ class Api:
 
             win_path = os.path.join(WIN_BASE, name)
             shell_cmd = launch_cmd or meta.get(name, {}).get("launch_cmd", "") or "claude"
-            wt = shutil.which("wt") or shutil.which("wt.exe")
-            if wt:
-                subprocess.Popen(
-                    [wt, "cmd.exe", "/k", shell_cmd],
-                    cwd=win_path,
-                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                )
-            else:
-                subprocess.Popen(
-                    ["cmd.exe", "/k", shell_cmd],
-                    cwd=win_path,
-                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                )
+            _open_terminal(shell_cmd, win_path)
             refresh_now(name)
             return {"ok": True}
         except Exception as e:
@@ -836,19 +835,7 @@ class Api:
                 shell_cmd = "claude --continue"
 
             win_path = os.path.join(WIN_BASE, name)
-            wt = shutil.which("wt") or shutil.which("wt.exe")
-            if wt:
-                subprocess.Popen(
-                    [wt, "cmd.exe", "/k", shell_cmd],
-                    cwd=win_path,
-                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                )
-            else:
-                subprocess.Popen(
-                    ["cmd.exe", "/k", shell_cmd],
-                    cwd=win_path,
-                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                )
+            _open_terminal(shell_cmd, win_path)
             refresh_now(name)
             return {"ok": True}
         except Exception as e:
@@ -971,10 +958,7 @@ class Api:
         """Open Claude Code with no project (home dir)."""
         try:
             import pathlib
-            home = pathlib.Path.home()
-            wt = shutil.which("wt") or shutil.which("wt.exe")
-            args = [wt, "cmd.exe", "/k", "claude"] if wt else ["cmd.exe", "/k", "claude"]
-            subprocess.Popen(args, cwd=str(home), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            _open_terminal("claude", str(pathlib.Path.home()))
             return {"ok": True}
         except Exception as e:
             return {"ok": False, "error": str(e)}
@@ -982,9 +966,7 @@ class Api:
     def open_self(self):
         """Open the launcher project itself in Claude Code."""
         try:
-            wt = shutil.which("wt") or shutil.which("wt.exe")
-            args = [wt, "cmd.exe", "/k", "claude"] if wt else ["cmd.exe", "/k", "claude"]
-            subprocess.Popen(args, cwd=SCRIPT_DIR, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            _open_terminal("claude", SCRIPT_DIR)
             return {"ok": True}
         except Exception as e:
             return {"ok": False, "error": str(e)}
