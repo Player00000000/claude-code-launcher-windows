@@ -42,6 +42,12 @@ if ctypes.windll.kernel32.GetLastError() == 183:  # ERROR_ALREADY_EXISTS
     )
     sys.exit(0)
 
+# Per-monitor DPI V2 — app re-renders at native resolution when moved between monitors
+try:
+    ctypes.windll.user32.SetProcessDpiAwarenessContext(ctypes.c_void_p(-4))
+except Exception:
+    pass
+
 SCRIPT_DIR    = os.path.dirname(os.path.abspath(__file__))
 META_FILE     = os.path.join(SCRIPT_DIR, "projects.json")
 USAGE_FILE    = os.path.join(SCRIPT_DIR, "usage.json")
@@ -49,10 +55,12 @@ SETTINGS_FILE = os.path.join(SCRIPT_DIR, "settings.json")
 EXCLUDE       = {"launcher", ".git", "__pycache__"}
 SKIP_DIRS     = {".git", "node_modules", "__pycache__", ".next", "venv", ".venv", ".mypy_cache", "dist", "build"}
 
+def _excluded(f): return f in EXCLUDE or f.startswith(('_', '.'))
+
 # Defaults — overridden at startup from settings.json
 _DEFAULT_WIN_BASE = os.path.dirname(SCRIPT_DIR)
 WIN_BASE   = _DEFAULT_WIN_BASE
-WSL_BASE   = "/mnt/d/Claude Code"
+WSL_BASE   = ""
 
 DEFAULT_SETTINGS = {
     "win_base":          _DEFAULT_WIN_BASE,
@@ -134,6 +142,37 @@ def validate_name(name):
     if not target.startswith(base):
         return "Name resolves outside base dir"
     return None
+
+
+def _scaffold_project(proj_dir, name):
+    """Create CONTEXT.md, DECISIONS.md and register in PROJECT_INDEX.md."""
+    today = datetime.now().strftime("%Y-%m-%d")
+    tmpl_dir = os.path.join(WIN_BASE, "_shared", "templates")
+
+    for fname in ("CONTEXT.md", "DECISIONS.md"):
+        src = os.path.join(tmpl_dir, fname)
+        dst = os.path.join(proj_dir, fname)
+        if os.path.exists(src) and not os.path.exists(dst):
+            with open(src, encoding="utf-8") as f:
+                content = f.read()
+            content = content.replace("[Project Name]", name).replace("[วันที่]", today)
+            with open(dst, "w", encoding="utf-8") as f:
+                f.write(content)
+
+    index_path = os.path.join(WIN_BASE, "PROJECT_INDEX.md")
+    if os.path.exists(index_path):
+        with open(index_path, encoding="utf-8") as f:
+            lines = f.readlines()
+        new_row = f"| **{name}** | 🟡 Draft | TBD | [CONTEXT]({name}/CONTEXT.md) |\n"
+        # Insert before Dormant section
+        for i, line in enumerate(lines):
+            if line.startswith("## 🔴 Dormant"):
+                lines.insert(i, new_row)
+                break
+        else:
+            lines.append(new_row)
+        with open(index_path, "w", encoding="utf-8") as f:
+            f.writelines(lines)
 
 
 def load_meta():
@@ -353,7 +392,7 @@ def _scan_once():
     try:
         folders = [
             f for f in sorted(os.listdir(WIN_BASE))
-            if f not in EXCLUDE and os.path.isdir(os.path.join(WIN_BASE, f))
+            if not _excluded(f) and os.path.isdir(os.path.join(WIN_BASE, f))
         ]
         for folder in folders:
             _refresh_folder(folder)
@@ -388,7 +427,7 @@ def scan_projects(show_archived=False):
     try:
         new_folders = []
         for folder in sorted(os.listdir(WIN_BASE)):
-            if folder in EXCLUDE:
+            if _excluded(folder):
                 continue
             win_path = os.path.join(WIN_BASE, folder)
             if not os.path.isdir(win_path):
@@ -476,10 +515,8 @@ class Api:
             save_usage(usage)
 
             win_path = os.path.join(WIN_BASE, name)
-            custom = launch_cmd or meta.get(name, {}).get("launch_cmd", "")
-            shell_cmd = custom if custom else "claude"
-
-            wt = shutil.which("wt.exe") or shutil.which("wt")
+            shell_cmd = launch_cmd or meta.get(name, {}).get("launch_cmd", "") or "claude"
+            wt = shutil.which("wt") or shutil.which("wt.exe")
             if wt:
                 subprocess.Popen(
                     [wt, "cmd.exe", "/k", shell_cmd],
@@ -490,8 +527,7 @@ class Api:
                 subprocess.Popen(
                     ["cmd.exe", "/k", shell_cmd],
                     cwd=win_path,
-                    creationflags=subprocess.CREATE_NEW_CONSOLE,
-                    close_fds=True,
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                 )
             refresh_now(name)
             return {"ok": True}
@@ -553,7 +589,9 @@ class Api:
         err = validate_name(name)
         if err:
             return {"ok": False, "error": err}
-        os.makedirs(os.path.join(WIN_BASE, name), exist_ok=True)
+        proj_dir = os.path.join(WIN_BASE, name)
+        os.makedirs(proj_dir, exist_ok=True)
+        _scaffold_project(proj_dir, name)
         meta = load_meta()
         meta[name] = {
             "description": description or DEFAULT_DESC,
@@ -789,15 +827,16 @@ class Api:
             usage.setdefault("launches", {})[mk] = usage.get("launches", {}).get(mk, 0) + 1
             save_usage(usage)
 
-            win_path = os.path.join(WIN_BASE, name)
             if session_id:
                 if not re.match(r'^[0-9a-f\-]{36}$', session_id):
                     return {"ok": False, "error": "Invalid session id"}
-                shell_cmd = f"claude --resume {session_id}"
+                import shlex
+                shell_cmd = f"claude --resume {shlex.quote(session_id)}"
             else:
                 shell_cmd = "claude --continue"
 
-            wt = shutil.which("wt.exe") or shutil.which("wt")
+            win_path = os.path.join(WIN_BASE, name)
+            wt = shutil.which("wt") or shutil.which("wt.exe")
             if wt:
                 subprocess.Popen(
                     [wt, "cmd.exe", "/k", shell_cmd],
@@ -808,8 +847,7 @@ class Api:
                 subprocess.Popen(
                     ["cmd.exe", "/k", shell_cmd],
                     cwd=win_path,
-                    creationflags=subprocess.CREATE_NEW_CONSOLE,
-                    close_fds=True,
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                 )
             refresh_now(name)
             return {"ok": True}
@@ -929,23 +967,24 @@ class Api:
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
+    def open_claude_home(self):
+        """Open Claude Code with no project (home dir)."""
+        try:
+            import pathlib
+            home = pathlib.Path.home()
+            wt = shutil.which("wt") or shutil.which("wt.exe")
+            args = [wt, "cmd.exe", "/k", "claude"] if wt else ["cmd.exe", "/k", "claude"]
+            subprocess.Popen(args, cwd=str(home), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            return {"ok": True}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
     def open_self(self):
         """Open the launcher project itself in Claude Code."""
         try:
-            wt = shutil.which("wt.exe") or shutil.which("wt")
-            if wt:
-                subprocess.Popen(
-                    [wt, "cmd.exe", "/k", "claude"],
-                    cwd=SCRIPT_DIR,
-                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                )
-            else:
-                subprocess.Popen(
-                    ["cmd.exe", "/k", "claude"],
-                    cwd=SCRIPT_DIR,
-                    creationflags=subprocess.CREATE_NEW_CONSOLE,
-                    close_fds=True,
-                )
+            wt = shutil.which("wt") or shutil.which("wt.exe")
+            args = [wt, "cmd.exe", "/k", "claude"] if wt else ["cmd.exe", "/k", "claude"]
+            subprocess.Popen(args, cwd=SCRIPT_DIR, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             return {"ok": True}
         except Exception as e:
             return {"ok": False, "error": str(e)}
@@ -954,7 +993,7 @@ class Api:
         try:
             existing = {
                 f for f in os.listdir(WIN_BASE)
-                if f not in EXCLUDE and os.path.isdir(os.path.join(WIN_BASE, f))
+                if not _excluded(f) and os.path.isdir(os.path.join(WIN_BASE, f))
             }
             meta = load_meta()
             orphans = [k for k in meta if k not in existing]
@@ -970,7 +1009,7 @@ class Api:
         try:
             existing = {
                 f for f in os.listdir(WIN_BASE)
-                if f not in EXCLUDE and os.path.isdir(os.path.join(WIN_BASE, f))
+                if not _excluded(f) and os.path.isdir(os.path.join(WIN_BASE, f))
             }
             meta = load_meta()
             return {"ok": True, "count": len([k for k in meta if k not in existing])}

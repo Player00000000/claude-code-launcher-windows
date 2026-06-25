@@ -68,6 +68,8 @@
           <button class="sidebar-btn" onclick="openSettingsModal()" title="Settings">⚙ Settings</button>
           <button class="sidebar-btn" onclick="openHelp()" title="Help (press ?)">? Help</button>
           <button class="sidebar-btn" onclick="openCloneModal()" title="Clone from GitHub">⬇ Clone</button>
+          <button class="sidebar-btn" onclick="openClaudeHome()" title="Open Claude Code (no project)">◆ Claude</button>
+          <button class="sidebar-btn" onclick="openTmuxModal()" title="tmux cheatsheet">▣ tmux</button>
         </div>
 
       </div>
@@ -336,6 +338,13 @@
         </div>
       </div>
       <div class="field-group">
+        <label>FONT STYLE</label>
+        <div class="theme-options">
+          <label class="theme-option"><input type="radio" name="font-mode" value="pixel"><span>PIXEL (retro)</span></label>
+          <label class="theme-option"><input type="radio" name="font-mode" value="readable"><span>READABLE (clean)</span></label>
+        </div>
+      </div>
+      <div class="field-group">
         <label>WALLPAPER</label>
         <div class="wallpaper-presets">
           <button class="wallpaper-preset active" data-wp="" onclick="setWallpaperPreset('')">OFF</button>
@@ -372,12 +381,6 @@
         <button class="btn-pixel btn-confirm" onclick="createDesktopIcon()" style="padding:6px 14px;font-size:0.85em">&#x1F4E5; CREATE DESKTOP ICON</button>
       </div>
       <div class="field-group">
-        <label>LAUNCHER PROJECT</label>
-        <button class="btn-pixel btn-confirm" onclick="openSelf()" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;font-size:0.85em">
-          <span style="font-size:1.1em">&#x1F680;</span> OPEN IN CLAUDE
-        </button>
-      </div>
-      <div class="field-group">
         <label>MAINTENANCE</label>
         <div style="display:flex;align-items:center;gap:12px">
           <span id="orphan-count-label" style="font-family:var(--font-vt);font-size:17px;color:var(--text3)">Loading...</span>
@@ -386,6 +389,9 @@
       </div>
       <div class="modal-actions">
         <button class="btn-pixel btn-cancel" onclick="closeModal('settings-modal')">CANCEL</button>
+        <button class="btn-pixel btn-confirm" onclick="openSelf()" style="display:inline-flex;align-items:center;gap:6px">
+          <span style="font-size:1.1em">&#x1F680;</span> OPEN IN CLAUDE
+        </button>
         <button class="btn-pixel btn-confirm" onclick="saveSettingsModal()">SAVE</button>
       </div>
     </div>
@@ -473,6 +479,88 @@
       <div class="modal-actions">
         <button class="btn-pixel btn-cancel" onclick="closeModal('clone-modal')">CANCEL</button>
         <button class="btn-pixel btn-confirm" id="clone-btn" onclick="doClone()">⬇ CLONE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TMUX MODAL ── -->
+  <div id="tmux-modal" class="modal hidden" onclick="closeOnBackdrop(event,'tmux-modal')">
+    <div class="modal-box modal-box-wide help-modal-box tmux-modal-box">
+      <div class="modal-title">▣ TMUX CHEATSHEET</div>
+
+      <div class="help-grid tmux-grid">
+
+        <div class="help-section">
+          <div class="help-section-title">⚡ ESSENTIAL (ใช้ทุกวัน)</div>
+          <div class="help-row"><span class="help-key">Ctrl-b</span><span class="help-val">Prefix key — กดก่อนทุก shortcut</span></div>
+          <div class="help-row"><span class="help-key">Ctrl-b d</span><span class="help-val">Detach — ออกจาก session (session ยังทำงานอยู่)</span></div>
+          <div class="help-row"><span class="help-key">Ctrl-b %</span><span class="help-val">แบ่ง pane ซ้าย/ขวา (vertical split)</span></div>
+          <div class="help-row"><span class="help-key">Ctrl-b "</span><span class="help-val">แบ่ง pane บน/ล่าง (horizontal split)</span></div>
+          <div class="help-row"><span class="help-key">Ctrl-b ←↑→↓</span><span class="help-val">เลื่อนไปยัง pane ต่างๆ</span></div>
+          <div class="help-row"><span class="help-key">Ctrl-b z</span><span class="help-val">Zoom pane — ขยาย/ย่อ pane เต็มจอ</span></div>
+          <div class="help-row"><span class="help-key">Ctrl-b c</span><span class="help-val">สร้าง window ใหม่</span></div>
+          <div class="help-row"><span class="help-key">Ctrl-b n / p</span><span class="help-val">ไป window ถัดไป / ก่อนหน้า</span></div>
+          <div class="help-row"><span class="help-key">Ctrl-b 0–9</span><span class="help-val">ไป window หมายเลขนั้นตรงๆ</span></div>
+        </div>
+
+        <div class="help-section">
+          <div class="help-section-title">🖥 SESSIONS (บริหาร session)</div>
+          <div class="help-row"><span class="help-key">tmux</span><span class="help-val">เปิด session ใหม่</span></div>
+          <div class="help-row"><span class="help-key">tmux new -s name</span><span class="help-val">เปิด session พร้อมตั้งชื่อ</span></div>
+          <div class="help-row"><span class="help-key">tmux ls</span><span class="help-val">ดูรายการ session ทั้งหมด</span></div>
+          <div class="help-row"><span class="help-key">tmux a</span><span class="help-val">Attach กลับ session ล่าสุด</span></div>
+          <div class="help-row"><span class="help-key">tmux a -t name</span><span class="help-val">Attach เจาะจง session ตามชื่อ</span></div>
+          <div class="help-row"><span class="help-key">tmux kill-session -t name</span><span class="help-val">ลบ session</span></div>
+          <div class="help-row"><span class="help-key">Ctrl-b $</span><span class="help-val">เปลี่ยนชื่อ session ปัจจุบัน</span></div>
+          <div class="help-row"><span class="help-key">Ctrl-b s</span><span class="help-val">เลือก session แบบ interactive</span></div>
+          <div class="help-row"><span class="help-key">Ctrl-b ( / )</span><span class="help-val">ไป session ก่อนหน้า / ถัดไป</span></div>
+        </div>
+
+        <div class="help-section">
+          <div class="help-section-title">⬛ PANES (จัดการหน้าต่างย่อย)</div>
+          <div class="help-row"><span class="help-key">Ctrl-b x</span><span class="help-val">ปิด pane ปัจจุบัน</span></div>
+          <div class="help-row"><span class="help-key">Ctrl-b q</span><span class="help-val">แสดงหมายเลข pane</span></div>
+          <div class="help-row"><span class="help-key">Ctrl-b {</span><span class="help-val">ย้าย pane ไปซ้าย/บน</span></div>
+          <div class="help-row"><span class="help-key">Ctrl-b }</span><span class="help-val">ย้าย pane ไปขวา/ล่าง</span></div>
+          <div class="help-row"><span class="help-key">Ctrl-b Space</span><span class="help-val">สลับ layout (even-h, even-v, tiled…)</span></div>
+          <div class="help-row"><span class="help-key">Ctrl-b Ctrl-←→↑↓</span><span class="help-val">ปรับขนาด pane</span></div>
+          <div class="help-row"><span class="help-key">Ctrl-b !</span><span class="help-val">แยก pane ออกเป็น window ใหม่</span></div>
+        </div>
+
+        <div class="help-section">
+          <div class="help-section-title">🗂 WINDOWS (แท็บใน session)</div>
+          <div class="help-row"><span class="help-key">Ctrl-b w</span><span class="help-val">เลือก window แบบ visual</span></div>
+          <div class="help-row"><span class="help-key">Ctrl-b ,</span><span class="help-val">เปลี่ยนชื่อ window</span></div>
+          <div class="help-row"><span class="help-key">Ctrl-b &amp;</span><span class="help-val">ปิด window (ต้องยืนยัน)</span></div>
+          <div class="help-row"><span class="help-key">Ctrl-b l</span><span class="help-val">กลับ window ก่อนหน้า (last)</span></div>
+          <div class="help-row"><span class="help-key">Ctrl-b f</span><span class="help-val">ค้นหา window จากชื่อ</span></div>
+        </div>
+
+        <div class="help-section">
+          <div class="help-section-title">📋 COPY MODE (เลื่อน/copy output)</div>
+          <div class="help-row"><span class="help-key">Ctrl-b [</span><span class="help-val">เข้า copy mode — เลื่อนดู output เก่าได้</span></div>
+          <div class="help-row"><span class="help-key">q</span><span class="help-val">ออกจาก copy mode</span></div>
+          <div class="help-row"><span class="help-key">/ หรือ ?</span><span class="help-val">ค้นหาข้อความ (ใน copy mode)</span></div>
+          <div class="help-row"><span class="help-key">Space</span><span class="help-val">เริ่มเลือกข้อความ</span></div>
+          <div class="help-row"><span class="help-key">Enter</span><span class="help-val">Copy ข้อความที่เลือก</span></div>
+          <div class="help-row"><span class="help-key">Ctrl-b ]</span><span class="help-val">Paste ข้อความที่ copy ไว้</span></div>
+          <div class="help-row"><span class="help-key">PgUp / PgDn</span><span class="help-val">เลื่อนหน้าใน copy mode</span></div>
+        </div>
+
+        <div class="help-section">
+          <div class="help-section-title">⚙ CONFIG (~/.tmux.conf)</div>
+          <div class="help-row"><span class="help-key tmux-code">set -g mouse on</span><span class="help-val">เปิดใช้เมาส์ (คลิก/scroll/resize)</span></div>
+          <div class="help-row"><span class="help-key tmux-code">set -g prefix C-a</span><span class="help-val">เปลี่ยน prefix เป็น Ctrl-a (แบบ screen)</span></div>
+          <div class="help-row"><span class="help-key tmux-code">set -g history-limit 50000</span><span class="help-val">เพิ่ม scroll buffer</span></div>
+          <div class="help-row"><span class="help-key tmux-code">bind r source-file ~/.tmux.conf</span><span class="help-val">Reload config ด้วย Ctrl-b r</span></div>
+          <div class="help-row"><span class="help-key">Ctrl-b :</span><span class="help-val">เปิด command prompt ใน tmux</span></div>
+          <div class="help-row"><span class="help-key">Ctrl-b ?</span><span class="help-val">ดู shortcut ทั้งหมดใน tmux</span></div>
+        </div>
+
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-pixel btn-confirm" onclick="closeModal('tmux-modal')">GOT IT</button>
       </div>
     </div>
   </div>
